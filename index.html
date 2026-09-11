@@ -65,6 +65,8 @@
   #overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
     background: rgba(11,13,26,.88); text-align: center; padding: 20px; border-radius: 10px; }
   #overlay p { color: var(--muted); max-width: 420px; margin: 6px auto; }
+  #overlay .rules { color: var(--text); font-size: 14px; line-height: 1.7; margin: 10px auto; }
+  #overlay .rules b { font-weight: 600; letter-spacing: .1em; }
   #overlay .pick { margin: 14px 0 4px; }
   .chips { display: inline-flex; gap: 6px; margin: 4px 0 10px; flex-wrap: wrap; justify-content: center; }
   .chip { font: inherit; font-size: 11px; letter-spacing: .16em; padding: 7px 14px; border: 1px solid var(--divider); border-radius: 999px;
@@ -84,7 +86,6 @@
 <div id="app">
   <header>
     <h1>READ THE TAPE</h1>
-    <span class="sub">headlines move the price. be on the right side.</span>
     <a class="src" href="https://github.com/FazleRas/market-maker">source</a>
   </header>
 
@@ -101,8 +102,8 @@
     <div id="overlay">
       <div>
         <div style="letter-spacing:.3em;font-size:14px">READ THE TAPE</div>
-        <p>Headlines hit. The price moves. Sometimes the way the headline says. Sometimes not.</p>
-        <p>Buy if it is going up. Sell if it is going down. Flat if you are not sure. Every switch costs the spread.</p>
+        <p class="rules"><span class="pos">▲ headline</span> usually means up. <span class="neg">▼ headline</span> usually means down. Sometimes it lies.</p>
+        <p class="rules"><b>BUY</b> when it goes up. <b>SELL</b> when it goes down. <b>FLAT</b> when unsure.</p>
         <div class="pick"><span class="label">length</span></div>
         <div class="chips" id="lenChips">
           <button class="chip on" data-len="60">60 SEC</button>

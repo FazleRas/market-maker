@@ -1,8 +1,8 @@
 # Read the Tape
 
-A trading game in one HTML file. Headlines hit, the price moves, and you
-decide: buy, sell, or stay flat. At the end you get a rating from -5 to 5
-stars for how well you read the market.
+A trading game in one HTML file. A ▲ headline usually means up, a ▼ headline
+usually means down, and sometimes it lies. Buy when it goes up, sell when it
+goes down, flat when unsure. At the end you get a rating from -5 to 5 stars.
 
 **[Play it](https://fazleras.github.io/market-maker/)**. No build, no backend,
 nothing to install.
