@@ -16,9 +16,10 @@ nothing to install.
 | `SELL` or `↓` | go short 100 shares |
 | `R` | restart |
 
-Every switch costs $2 of spread. The chart turns green while you are long and
-red while you are short, so the finished round shows exactly where you were
-right.
+Each round is a random stock somewhere between $80 and $400. Every switch
+costs the spread, 2 basis points of the price, so about $4 a flip on a $200
+stock. The chart turns green while you are long and red while you are short,
+so the finished round shows exactly where you were right.
 
 Pick a length (60 seconds or 2 minutes) and a mode:
 
@@ -30,7 +31,7 @@ Pick a length (60 seconds or 2 minutes) and a mode:
 
 ## What a headline can do
 
-- **Real.** The price moves the way the headline says, over 2 to 5 seconds.
+- **Real.** The price moves 1.5% to 4% the way the headline says, over 2 to 5 seconds.
 - **Fakeout.** It starts the right way, then reverses through where it began.
 - **Dud.** Headline hits, nothing happens.
 - **Silent dump.** A real move finishes, and a few seconds later the price
@@ -60,8 +61,9 @@ you get -5. Each star is 20% of the way.
 | -4 | Bag Holder |
 | -5 | Liquidated |
 
-The round also reports calls right, your best streak of correct calls, and
-your best rating for that mode and length.
+The stars pop in after a short rating animation with a one-line roast, or
+praise if you earned it. The round also reports calls right, your best streak
+of correct calls, and your best rating for that mode and length.
 
 ## Hard mode
 

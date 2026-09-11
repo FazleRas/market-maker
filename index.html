@@ -6,59 +6,72 @@
 <title>Read the Tape</title>
 <meta name="description" content="A trading game. Headlines move the price. Buy, sell, or stay flat, and get rated from -5 to 5 stars on how well you read the market.">
 <style>
-  :root { --bg: #000; --text: #e6e8ea; --muted: #6f767d; --divider: rgba(230,232,234,.14);
-    --hair: rgba(230,232,234,.08); --accent: #2563eb; --pos: #00c9a0; --neg: #ff2f45; --gold: #ffd60a; }
-  html, body { margin: 0; background: var(--bg); color: var(--text);
+  :root { --bg: #0b0d1a; --bg2: #141833; --panel: rgba(255,255,255,.035); --text: #eef0f6; --muted: #8b90a7;
+    --divider: rgba(255,255,255,.12); --hair: rgba(255,255,255,.07); --accent: #7c5cff; --pos: #22e6a5; --neg: #ff4d6d;
+    --gold: #ffcc33; --cyan: #7dd3fc; }
+  html, body { margin: 0; color: var(--text); min-height: 100%;
+    background: radial-gradient(1200px 600px at 20% -10%, #2a1f5e 0%, transparent 60%),
+                radial-gradient(900px 500px at 100% 100%, #0f3d3a 0%, transparent 55%), var(--bg);
     font: 13px/1.5 "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace; }
   * { box-sizing: border-box; }
   #app { max-width: 920px; margin: 0 auto; padding: 16px 16px 40px; }
   header { display: flex; align-items: baseline; gap: 16px; margin-bottom: 12px; flex-wrap: wrap; }
-  header h1 { font-size: 13px; letter-spacing: .3em; margin: 0; font-weight: 500; }
+  header h1 { font-size: 15px; letter-spacing: .3em; margin: 0; font-weight: 600;
+    background: linear-gradient(90deg, var(--pos), var(--gold)); -webkit-background-clip: text; background-clip: text; color: transparent; }
   header .sub { color: var(--muted); font-size: 11px; }
   header .src { margin-left: auto; color: var(--muted); font-size: 11px; text-decoration: none; }
-  .panel { border: 1px solid var(--divider); padding: 10px 12px; }
+  .panel { border: 1px solid var(--divider); background: var(--panel); border-radius: 10px; padding: 12px 14px; }
   .label { font-size: 10.5px; letter-spacing: .16em; color: var(--muted); text-transform: uppercase; }
-  #chart { display: block; width: 100%; height: 330px; }
+  #chart { display: block; width: 100%; height: 330px; border-radius: 8px; }
   .top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
   .big { font-size: 28px; line-height: 1.1; }
-  #stars { font-size: 22px; letter-spacing: .05em; }
-  #news { font-size: 16px; letter-spacing: .04em; min-height: 26px; margin-top: 4px; }
+  #news { font-size: 16px; letter-spacing: .04em; min-height: 30px; margin: 6px 0; padding: 2px 10px; border-radius: 6px;
+    display: inline-block; }
+  #news.pos { background: rgba(34,230,165,.15); } #news.neg { background: rgba(255,77,109,.15); }
   .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
   @media (max-width: 640px) { .row { grid-template-columns: 1fr; } }
   .btns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
-  .btns button { font: inherit; font-size: 16px; letter-spacing: .2em; padding: 24px 0; border: 1px solid var(--divider);
-    background: transparent; color: var(--muted); cursor: pointer; transition: transform 80ms; }
+  .btns button { font: inherit; font-size: 16px; font-weight: 600; letter-spacing: .2em; padding: 24px 0; border: 1px solid var(--divider);
+    border-radius: 8px; background: rgba(255,255,255,.04); color: var(--muted); cursor: pointer; transition: transform 80ms, box-shadow 120ms; }
   .btns button:hover { color: var(--text); border-color: var(--text); }
   .btns button:active { transform: scale(.96); }
-  .btns button.on { color: #000; }
-  #buyBtn.on { background: var(--pos); border-color: var(--pos); }
-  #flatBtn.on { background: var(--text); border-color: var(--text); }
-  #sellBtn.on { background: var(--neg); border-color: var(--neg); }
+  .btns button.on { color: #0b0d1a; border-color: transparent; }
+  #buyBtn.on { background: linear-gradient(180deg, #4ff0bd, #16c48c); box-shadow: 0 0 24px rgba(34,230,165,.45); }
+  #flatBtn.on { background: linear-gradient(180deg, #ffffff, #c9cde0); box-shadow: 0 0 18px rgba(255,255,255,.25); }
+  #sellBtn.on { background: linear-gradient(180deg, #ff7a94, #ff2f57); box-shadow: 0 0 24px rgba(255,77,109,.45); }
   .keys { color: var(--muted); font-size: 11px; margin-top: 10px; }
   .keys b { color: var(--text); font-weight: 500; }
   .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; margin-top: 6px; }
   .stat .label { display: block; }
   .stat .v { font-size: 20px; }
-  table { border-collapse: collapse; width: 100%; margin-top: 8px; }
+  table { border-collapse: collapse; width: 100%; margin-top: 10px; }
   td { padding: 4px 0; border-bottom: 1px solid var(--hair); }
   td:last-child { text-align: right; }
   td:first-child { color: var(--muted); }
-  .rating { font-size: 34px; line-height: 1.1; margin-top: 4px; letter-spacing: .04em; }
-  .title { font-size: 18px; margin: 2px 0 6px; }
-  .verdict { color: var(--muted); margin-top: 8px; }
-  button.go { margin-top: 12px; width: 100%; font: inherit; font-size: 14px; letter-spacing: .16em; padding: 14px;
-    background: var(--accent); color: #fff; border: 0; cursor: pointer; }
+  .rating { font-size: 40px; line-height: 1.1; margin-top: 6px; letter-spacing: .04em; animation: pop 500ms cubic-bezier(.2,1.6,.4,1); }
+  .title { font-size: 20px; font-weight: 600; letter-spacing: .1em; margin: 2px 0; animation: pop 500ms 120ms both cubic-bezier(.2,1.6,.4,1); }
+  .roast { font-size: 15px; color: var(--text); margin: 6px 0 2px; animation: pop 500ms 240ms both cubic-bezier(.2,1.6,.4,1); }
+  @keyframes pop { from { transform: scale(.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .loading { padding: 26px 0 10px; }
+  .loading .label { display: block; margin-bottom: 10px; }
+  .bar { height: 8px; border-radius: 4px; background: var(--hair); overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 0; border-radius: 4px; background: linear-gradient(90deg, var(--accent), var(--cyan)); animation: fill 1400ms ease-in-out forwards; }
+  @keyframes fill { to { width: 100%; } }
+  button.go { margin-top: 12px; width: 100%; font: inherit; font-size: 14px; font-weight: 600; letter-spacing: .16em; padding: 14px;
+    border-radius: 8px; background: linear-gradient(180deg, #9b7dff, #6a48f5); color: #fff; border: 0; cursor: pointer;
+    box-shadow: 0 6px 24px rgba(124,92,255,.35); }
+  button.go:active { transform: scale(.98); }
   .pos { color: var(--pos); } .neg { color: var(--neg); } .gold { color: var(--gold); }
   #overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-    background: rgba(0,0,0,.84); text-align: center; padding: 20px; }
+    background: rgba(11,13,26,.88); text-align: center; padding: 20px; border-radius: 10px; }
   #overlay p { color: var(--muted); max-width: 420px; margin: 6px auto; }
   #overlay .pick { margin: 14px 0 4px; }
   .chips { display: inline-flex; gap: 6px; margin: 4px 0 10px; flex-wrap: wrap; justify-content: center; }
-  .chip { font: inherit; font-size: 11px; letter-spacing: .16em; padding: 6px 12px; border: 1px solid var(--divider);
+  .chip { font: inherit; font-size: 11px; letter-spacing: .16em; padding: 7px 14px; border: 1px solid var(--divider); border-radius: 999px;
     background: transparent; color: var(--muted); cursor: pointer; }
-  .chip.on { border-color: var(--text); color: var(--text); }
-  .chip.calm.on { border-color: var(--pos); color: var(--pos); }
-  .chip.chaos.on { border-color: var(--neg); color: var(--neg); }
+  .chip.on { border-color: var(--text); color: var(--text); background: rgba(255,255,255,.08); }
+  .chip.calm.on { border-color: var(--pos); color: var(--pos); background: rgba(34,230,165,.12); }
+  .chip.chaos.on { border-color: var(--neg); color: var(--neg); background: rgba(255,77,109,.12); }
   .hard { color: var(--muted); font-size: 11px; margin-top: 14px; }
   .hard a { color: var(--muted); }
   #flash { position: fixed; inset: 0; pointer-events: none; opacity: 0; }
@@ -77,7 +90,7 @@
 
   <div class="panel" style="position:relative">
     <div class="top">
-      <div><span class="label">price</span><div class="big" id="price">100.00</div></div>
+      <div><span class="label" id="ticker">price</span><div class="big" id="price">100.00</div></div>
       <div><span class="label">p&amp;l</span><div class="big" id="pnl">$0.00</div></div>
       <div><span class="label">rating</span><div class="big" id="stars">☆☆☆☆☆</div></div>
       <div><span class="label">position</span><div class="big" id="posLabel">FLAT</div></div>
@@ -89,7 +102,7 @@
       <div>
         <div style="letter-spacing:.3em;font-size:14px">READ THE TAPE</div>
         <p>Headlines hit. The price moves. Sometimes the way the headline says. Sometimes not.</p>
-        <p>Buy if it is going up. Sell if it is going down. Flat if you are not sure. Every switch costs $2.</p>
+        <p>Buy if it is going up. Sell if it is going down. Flat if you are not sure. Every switch costs the spread.</p>
         <div class="pick"><span class="label">length</span></div>
         <div class="chips" id="lenChips">
           <button class="chip on" data-len="60">60 SEC</button>
@@ -132,7 +145,7 @@
 
 <script>
 'use strict';
-const TICK_MS = 50, SIZE = 100, SPREAD = 2;
+const TICK_MS = 50, SIZE = 100;
 const fmt$ = (c) => `${c < 0 ? '-' : ''}$${(Math.abs(c) / 100).toFixed(2)}`;
 const rnd = (a, b) => a + Math.random() * (b - a);
 const rndi = (a, b) => Math.floor(rnd(a, b + 1));
@@ -140,6 +153,7 @@ const pick = (xs) => xs[rndi(0, xs.length - 1)];
 const gauss = () => { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random();
   return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
 
+const TICKERS = ['NVDA', 'TSLA', 'AAPL', 'AMD', 'META', 'NFLX', 'COIN', 'PLTR', 'SHOP', 'UBER', 'CRWD', 'SNOW'];
 const HEADLINES = {
   up: ['EARNINGS BEAT', 'GUIDANCE RAISED', 'TAKEOVER APPROACH', 'FDA APPROVAL', 'BUYBACK ANNOUNCED', 'UPGRADE TO BUY',
        'BIG CONTRACT WIN', 'ACTIVIST TAKES STAKE', 'DIVIDEND HIKED', 'RECORD QUARTER', 'INSIDER BUYING', 'ADDED TO S&P 500',
@@ -148,9 +162,6 @@ const HEADLINES = {
          'RECALL ANNOUNCED', 'DIVIDEND SUSPENDED', 'DATA BREACH', 'INSIDER SELLING', 'LAWSUIT FILED', 'CFO OUT',
          'SUPPLIER WARNS', 'PRICE WAR', 'TARIFFS HIT', 'DROPPED FROM INDEX', 'FACTORY STRIKE'],
 };
-
-// Mode knobs. fake: headline reverses. dud: headline, no move. dump: after a
-// real move finishes, the price quietly goes the other way with no headline.
 const MODES = {
   calm:   { fake: .18, dud: .08, dump: .10, gap: [50, 100], dur: [50, 110], hint: 'Fewer tricks. Headlines mostly mean what they say.' },
   normal: { fake: .35, dud: .10, dump: .30, gap: [40, 80],  dur: [40, 100], hint: 'A third of headlines reverse. Good news can still dump.' },
@@ -160,27 +171,43 @@ const TITLES = {
   5: 'TAPE READER', 4: 'SHARP', 3: 'SOLID', 2: 'GETTING THERE', 1: 'SCRATCHED A PROFIT', 0: 'FLAT',
   '-1': 'PAID THE SPREAD', '-2': 'CHASED THE HEADLINES', '-3': 'FOOLED BY THE FAKEOUTS', '-4': 'BAG HOLDER', '-5': 'LIQUIDATED',
 };
+const ROASTS = {
+  5: ['Absolute tape wizard.', 'Certified sniper.', 'Wall Street is calling.', 'Unfair. Frankly.'],
+  4: ['Sharp. Very sharp.', 'Nearly flawless.', 'Clean reads.', 'Dangerous with a terminal.'],
+  3: ['Solid work.', 'Respectable.', 'Not bad at all.', 'Would hire.'],
+  2: ['Getting there.', 'Late but right.', 'Close.', 'Promising.'],
+  1: ['Barely green.', 'Scraped by.', 'A profit is a profit.', 'Lunch money.'],
+  0: ['Flat. Zero. Nothing.', 'Did you play?', 'Perfectly mid.', 'Spectator.'],
+  '-1': ['Paid the spread.', 'The house thanks you.', 'Slightly cooked.', 'Tuition.'],
+  '-2': ['Chased every headline.', 'Bought the top.', 'Oof.', 'Exit liquidity.'],
+  '-3': ['Fooled by the fakeouts.', 'The line lied. You bought it.', 'Yikes.', 'Ouch.'],
+  '-4': ['Bag holder.', 'Wrong every time.', 'Impressively wrong.', 'Down catastrophically.'],
+  '-5': ['Liquidated.', 'Margin call.', 'Delete the app.', 'Inverse this person.'],
+};
 
 let mode = 'normal', lenS = 60, TICKS = 1200;
 let S;
 function reset() {
   TICKS = lenS * 1000 / TICK_MS;
-  S = { tick: 0, running: false, over: false, price: 10000, hist: [10000], pos: 0, cash: 0, fees: 0, trades: 0,
+  const start = rndi(80, 400) * 100 + rndi(0, 99);
+  S = { tick: 0, running: false, over: false, ticker: pick(TICKERS), start, price: start, hist: [start], pos: 0, cash: 0, fees: 0, trades: 0,
         posHist: [0], events: [], nextEvent: rndi(40, 80), pending: [], entry: null, popups: [], confetti: [],
         streak: 0, bestStreak: 0 };
 }
+// Spread per share scales with price: 2 basis points, at least a cent.
+const spread = (price) => Math.max(1, Math.round(price * 0.0002));
 
 // ---------------------------------------------------------------------------
-// Events
+// Events. Sizes are a percentage of the price so a $300 stock moves dollars.
 // ---------------------------------------------------------------------------
 function addEvent(dir, kind, size, dur, text) {
   const e = { at: S.tick, end: S.tick + dur, dir, kind, size, dur, text, resolved: false };
   S.events.push(e);
   if (text) {
     const el = document.getElementById('news');
-    el.textContent = `${dir > 0 ? '▲' : '▼'} ${text}`;
+    el.textContent = `${dir > 0 ? '▲' : '▼'} ${S.ticker}: ${text}`;
     el.className = dir > 0 ? 'pos' : 'neg';
-    flash(dir > 0 ? 'rgba(0,201,160,.25)' : 'rgba(255,47,69,.25)');
+    flash(dir > 0 ? 'rgba(34,230,165,.28)' : 'rgba(255,77,109,.28)');
   }
   return e;
 }
@@ -190,18 +217,15 @@ function scheduleHeadline() {
   const r = Math.random();
   const kind = r < M.fake ? 'fake' : r < M.fake + M.dud ? 'dud' : 'real';
   const dur = rndi(M.dur[0], M.dur[1]);
-  const size = kind === 'dud' ? rndi(3, 8) : rndi(30, 80);
+  const size = Math.round(S.price * (kind === 'dud' ? rnd(0.001, 0.003) : rnd(0.015, 0.04)));
   const e = addEvent(dir, kind, size, dur, pick(HEADLINES[dir > 0 ? 'up' : 'down']));
   if (kind === 'real' && Math.random() < M.dump) {
-    // sell the news: no headline, opposite direction, a few seconds later
     S.pending.push({ at: e.end + rndi(30, 80), dir: -dir, size: Math.round(size * rnd(0.7, 1.3)), dur: rndi(30, 70) });
   }
   S.nextEvent = e.end + rndi(M.gap[0], M.gap[1]);
 }
-// True direction of an event at a given age. Fakes flip at 35% of the move.
 function truth(e, age) {
-  if (age < 0 || age >= e.dur) return 0;
-  if (e.kind === 'dud') return 0;
+  if (age < 0 || age >= e.dur || e.kind === 'dud') return 0;
   if (e.kind === 'fake') return age < e.dur * 0.35 ? e.dir : -e.dir;
   return e.dir;
 }
@@ -219,11 +243,10 @@ function stepPrice() {
     if (S.tick >= p.at) { addEvent(p.dir, 'silent', p.size, p.dur, null); S.pending.splice(i, 1);
       if (S.nextEvent < S.tick + p.dur + 20) S.nextEvent = S.tick + p.dur + rndi(20, 50); }
   }
-  let d = gauss() * 1.0;
+  let d = gauss() * S.price * 0.0001;
   for (const e of S.events) d += eventDrift(e, S.tick - e.at);
-  S.price = Math.max(5000, S.price + d);
+  S.price = Math.max(S.start * 0.5, S.price + d);
 }
-// Score each event once its move is over: were you on the true side for most of it?
 function resolveEvents() {
   for (const e of S.events) {
     if (e.resolved || S.tick < e.end) continue;
@@ -241,14 +264,14 @@ function resolveEvents() {
 // ---------------------------------------------------------------------------
 function setPos(p) {
   if (!S.running || p === S.pos) return;
-  if (S.pos !== 0) {   // closing (or flipping): show what that trade made
-    const realized = S.pos * SIZE * (S.price - S.entry) - SIZE * SPREAD;
+  const fee = spread(S.price) * SIZE;
+  if (S.pos !== 0) {
+    const realized = S.pos * SIZE * (S.price - S.entry) - fee;
     S.popups.push({ text: `${realized >= 0 ? '+' : ''}${fmt$(realized)}`, good: realized >= 0, at: performance.now(), price: S.price, tick: S.tick });
   }
   const delta = p - S.pos;
-  S.cash -= delta * SIZE * S.price;
-  const fee = Math.abs(delta) * SIZE * SPREAD;
-  S.cash -= fee; S.fees += fee; S.trades++;
+  S.cash -= delta * SIZE * S.price + Math.abs(delta) * fee;
+  S.fees += Math.abs(delta) * fee; S.trades++;
   S.pos = p; S.entry = p !== 0 ? S.price : null;
   syncButtons();
 }
@@ -258,30 +281,24 @@ function syncButtons() {
   document.getElementById('flatBtn').classList.toggle('on', S.pos === 0);
   document.getElementById('sellBtn').classList.toggle('on', S.pos === -1);
 }
-
-// Perfect hindsight on the same price path: holds the true side of every
-// move, flat between moves, pays the same spread. Your rating is you vs this.
+// Perfect hindsight on the same path: true side of every move, flat between, same spread.
 function oraclePnl(upTo = S.hist.length) {
   let cash = 0, pos = 0;
   for (let t = 0; t < upTo; t++) {
     let want = 0;
     for (const e of S.events) { const w = truth(e, t - e.at); if (w) want = w; }
-    if (want !== pos) { const d = want - pos; cash -= d * SIZE * S.hist[t] + Math.abs(d) * SIZE * SPREAD; pos = want; }
+    if (want !== pos) { const d = want - pos; cash -= d * SIZE * S.hist[t] + Math.abs(d) * spread(S.hist[t]) * SIZE; pos = want; }
   }
   return cash + pos * SIZE * S.hist[upTo - 1];
 }
 function starsFor(me, oracle) {
   if (oracle <= 0) return 0;
-  const r = me / oracle;
-  return Math.max(-5, Math.min(5, Math.round(r * 5)));
+  return Math.max(-5, Math.min(5, Math.round(me / oracle * 5)));
 }
-function starText(n) {
-  const k = Math.abs(n);
-  return '★'.repeat(k) + '☆'.repeat(5 - k);
-}
+const starText = (n) => '★'.repeat(Math.abs(n)) + '☆'.repeat(5 - Math.abs(n));
 
 // ---------------------------------------------------------------------------
-// Loop
+// Loop and end of round
 // ---------------------------------------------------------------------------
 function step() {
   S.tick++;
@@ -293,47 +310,41 @@ function step() {
 }
 function endRound() {
   S.running = false; S.over = true;
-  if (S.pos !== 0) setPosForce(0);
+  if (S.pos !== 0) { S.running = true; setPos(0); S.running = false; }
   const me = pnl(), oracle = oraclePnl(), bh = SIZE * (S.price - S.hist[0]);
   const stars = starsFor(me, oracle);
   const scored = S.events.filter((e) => e.resolved && e.kind !== 'dud');
   const right = scored.filter((e) => e.right).length;
-  const fakes = scored.filter((e) => e.kind === 'fake').length, silent = scored.filter((e) => e.kind === 'silent').length;
   const key = `rtt:best:${mode}:${lenS}`;
   const best = Math.max(stars, Number(localStorage.getItem(key) ?? -5));
   try { localStorage.setItem(key, String(best)); } catch (e) { /* private mode */ }
-  const cls = (v) => (v > 0 ? 'pos' : v < 0 ? 'neg' : '');
-  const scls = stars > 0 ? 'gold' : stars < 0 ? 'neg' : '';
-  document.getElementById('side').innerHTML = `
-    <span class="label">${mode} · ${lenS === 60 ? '60 sec' : '2 min'}</span>
-    <div class="rating ${scls}">${stars < 0 ? '-' : ''}${starText(stars)}</div>
-    <div class="title ${scls}">${TITLES[stars]}</div>
-    <table>
-      <tr><td>you</td><td class="${cls(me)}">${fmt$(me)}</td></tr>
-      <tr><td>perfect</td><td class="pos">${fmt$(oracle)}</td></tr>
-      <tr><td>buy and hold</td><td class="${cls(bh)}">${fmt$(bh)}</td></tr>
-      <tr><td>calls right</td><td>${right} / ${scored.length}</td></tr>
-      <tr><td>fakeouts · silent dumps</td><td>${fakes} · ${silent}</td></tr>
-      <tr><td>best streak</td><td class="gold">${S.bestStreak}</td></tr>
-      <tr><td>best rating</td><td>${best < 0 ? '-' : ''}${starText(best)}</td></tr>
-    </table>
-    <div class="verdict">${verdict(stars, right, scored.length, S.trades)}</div>
-    <button class="go" id="againBtn">PLAY AGAIN</button>
-    <div class="hard">Hard mode: <a href="hard.html">quote the order book yourself</a>.</div>`;
-  document.getElementById('againBtn').onclick = showStart;
   const el = document.getElementById('news');
   el.textContent = 'round over. green is where you were long, red where you were short.'; el.className = '';
-  if (stars >= 4) burst();
-}
-function setPosForce(p) { const was = S.running; S.running = true; setPos(p); S.running = was; }
-function verdict(stars, right, n, trades) {
-  if (stars >= 5) return 'You read that market. Fast on the headline, patient through the fakeouts.';
-  if (stars >= 3) return 'You caught the big moves. The fakeouts and the spread took the rest.';
-  if (stars >= 1) return 'Right direction, late entries. The move is mostly done by the time it feels safe.';
-  if (stars === 0) return 'Flat round. Try going with the headline right away and getting flat when it stalls.';
-  if (trades > n * 3) return 'Too many switches. Each one costs $2 and the wiggles between headlines mean nothing.';
-  if (right < n / 2) return 'More calls wrong than right. When the line stalls, the move is over. Get out.';
-  return 'Right calls, wrong sizing of time. You stayed in through the reversals. Flat is a position too.';
+  document.getElementById('side').innerHTML = `
+    <div class="loading"><span class="label">rating your trades</span><div class="bar"><i></i></div></div>`;
+  const cls = (v) => (v > 0 ? 'pos' : v < 0 ? 'neg' : '');
+  const scls = stars > 0 ? 'gold' : stars < 0 ? 'neg' : '';
+  const reveal = () => {
+    if (!S.over) return;
+    document.getElementById('side').innerHTML = `
+      <span class="label">${mode} · ${lenS === 60 ? '60 sec' : '2 min'} · ${S.ticker}</span>
+      <div class="rating ${scls}">${stars < 0 ? '-' : ''}${starText(stars)}</div>
+      <div class="title ${scls}">${TITLES[stars]}</div>
+      <div class="roast">${pick(ROASTS[stars])}</div>
+      <table>
+        <tr><td>you</td><td class="${cls(me)}">${fmt$(me)}</td></tr>
+        <tr><td>perfect</td><td class="pos">${fmt$(oracle)}</td></tr>
+        <tr><td>buy and hold</td><td class="${cls(bh)}">${fmt$(bh)}</td></tr>
+        <tr><td>calls right</td><td>${right} / ${scored.length}</td></tr>
+        <tr><td>best streak</td><td class="gold">${S.bestStreak}</td></tr>
+        <tr><td>best rating</td><td>${best < 0 ? '-' : ''}${starText(best)}</td></tr>
+      </table>
+      <button class="go" id="againBtn">PLAY AGAIN</button>
+      <div class="hard">Hard mode: <a href="hard.html">quote the order book yourself</a>.</div>`;
+    document.getElementById('againBtn').onclick = showStart;
+    if (stars >= 4) burst();
+  };
+  S.revealTimer = setTimeout(reveal, 1500);
 }
 
 // ---------------------------------------------------------------------------
@@ -348,80 +359,84 @@ function resize() {
 }
 window.addEventListener('resize', resize);
 let lo = 9900, hi = 10100;
-const PAD = 46;
+const PAD = 52;
+function gridStep(range) {
+  for (const s of [10, 20, 50, 100, 200, 500, 1000, 2000, 5000]) if (range / s <= 7) return s;
+  return 10000;
+}
 function draw(now) {
-  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#10132a'); g.addColorStop(1, '#0a0c18');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
   const hist = S.hist, n = hist.length;
-  const tLo = Math.min(...hist) - 15, tHi = Math.max(...hist) + 15;
+  const marg = S.start * 0.004;
+  const tLo = Math.min(...hist) - marg, tHi = Math.max(...hist) + marg;
   lo += (tLo - lo) * 0.2; hi += (tHi - hi) * 0.2;
   const x = (i) => PAD + (i / TICKS) * (W - PAD - 8), y = (p) => 24 + (1 - (p - lo) / (hi - lo)) * (H - 34);
-  ctx.strokeStyle = 'rgba(230,232,234,.08)'; ctx.fillStyle = '#6f767d'; ctx.font = '10px ui-monospace, Menlo, monospace';
+  ctx.strokeStyle = 'rgba(255,255,255,.07)'; ctx.fillStyle = '#8b90a7'; ctx.font = '10px ui-monospace, Menlo, monospace';
   ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-  const stepC = (hi - lo) > 300 ? 100 : (hi - lo) > 120 ? 50 : 20;
+  const stepC = gridStep(hi - lo);
   for (let p = Math.ceil(lo / stepC) * stepC; p < hi; p += stepC) {
     ctx.beginPath(); ctx.moveTo(PAD, y(p)); ctx.lineTo(W, y(p)); ctx.stroke(); ctx.fillText((p / 100).toFixed(2), 0, y(p));
   }
   for (let s = 10; s < lenS; s += 10) { const xx = x(s * 1000 / TICK_MS); ctx.beginPath(); ctx.moveTo(xx, 0); ctx.lineTo(xx, H); ctx.stroke(); }
-  // position shading and coloured line segments
   let i = 0;
   while (i < n - 1) {
     const p = S.posHist[i]; let j = i;
     while (j < n - 1 && S.posHist[j + 1] === p) j++;
     if (p !== 0) {
-      ctx.fillStyle = p > 0 ? 'rgba(0,201,160,.16)' : 'rgba(255,47,69,.16)';
+      ctx.fillStyle = p > 0 ? 'rgba(34,230,165,.18)' : 'rgba(255,77,109,.18)';
       ctx.beginPath(); ctx.moveTo(x(i), H);
       for (let k = i; k <= j; k++) ctx.lineTo(x(k), y(hist[k]));
       ctx.lineTo(x(j), H); ctx.closePath(); ctx.fill();
     }
-    ctx.strokeStyle = p > 0 ? '#00c9a0' : p < 0 ? '#ff2f45' : '#e6e8ea'; ctx.lineWidth = p ? 2 : 1.5;
+    ctx.strokeStyle = p > 0 ? '#22e6a5' : p < 0 ? '#ff4d6d' : '#7dd3fc'; ctx.lineWidth = p ? 2.2 : 1.6;
     ctx.beginPath(); for (let k = i; k <= Math.min(j + 1, n - 1); k++) (k === i ? ctx.moveTo : ctx.lineTo).call(ctx, x(k), y(hist[k]));
     ctx.stroke();
     i = j + 1;
   }
-  // headline markers, and the truth once the round is over
   for (const e of S.events) {
     const xx = x(e.at);
     if (e.kind === 'silent' && !S.over) continue;
-    ctx.fillStyle = e.kind === 'silent' ? '#6f767d' : e.dir > 0 ? '#00c9a0' : '#ff2f45';
+    ctx.fillStyle = e.kind === 'silent' ? '#8b90a7' : e.dir > 0 ? '#22e6a5' : '#ff4d6d';
     ctx.beginPath();
     if (e.dir > 0) { ctx.moveTo(xx, 4); ctx.lineTo(xx - 4, 12); ctx.lineTo(xx + 4, 12); }
     else { ctx.moveTo(xx, 12); ctx.lineTo(xx - 4, 4); ctx.lineTo(xx + 4, 4); }
     ctx.closePath(); ctx.fill();
     if (S.over && e.kind !== 'real') {
-      ctx.fillStyle = e.kind === 'fake' ? '#ffd60a' : '#6f767d'; ctx.textAlign = 'center';
+      ctx.fillStyle = e.kind === 'fake' ? '#ffcc33' : '#8b90a7'; ctx.textAlign = 'center';
       ctx.fillText({ fake: 'fake', dud: 'dud', silent: 'dump' }[e.kind], xx, 20);
     }
     if (S.over && e.kind !== 'dud' && e.resolved) {
-      ctx.fillStyle = e.right ? '#00c9a0' : '#ff2f45'; ctx.textAlign = 'center';
+      ctx.fillStyle = e.right ? '#22e6a5' : '#ff4d6d'; ctx.textAlign = 'center';
       ctx.fillText(e.right ? '✓' : '✗', x((e.at + e.end) / 2), H - 8);
     }
   }
-  // current price dot
   const last = hist[n - 1];
-  ctx.fillStyle = S.pos > 0 ? '#00c9a0' : S.pos < 0 ? '#ff2f45' : '#e6e8ea';
+  ctx.fillStyle = S.pos > 0 ? '#22e6a5' : S.pos < 0 ? '#ff4d6d' : '#7dd3fc';
+  ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 12;
   ctx.beginPath(); ctx.arc(x(n - 1), y(last), 4, 0, Math.PI * 2); ctx.fill();
-  // trade popups
+  ctx.shadowBlur = 0;
   S.popups = S.popups.filter((p) => now - p.at < 1400);
   ctx.font = 'bold 13px ui-monospace, Menlo, monospace'; ctx.textAlign = 'center';
   for (const p of S.popups) {
     const t = (now - p.at) / 1400;
-    ctx.fillStyle = p.good ? `rgba(0,201,160,${1 - t})` : `rgba(255,47,69,${1 - t})`;
+    ctx.fillStyle = p.good ? `rgba(34,230,165,${1 - t})` : `rgba(255,77,109,${1 - t})`;
     ctx.fillText(p.text, Math.min(x(p.tick), W - 30), y(p.price) - 14 - t * 30);
   }
-  // confetti
   if (S.confetti.length) {
     for (const c of S.confetti) { c.x += c.vx; c.y += c.vy; c.vy += 0.15; c.vx *= 0.99; ctx.fillStyle = c.color; ctx.fillRect(c.x, c.y, 5, 5); }
     S.confetti = S.confetti.filter((c) => c.y < H + 10);
   }
 }
 function burst() {
-  const colors = ['#00c9a0', '#ffd60a', '#2563eb', '#ff2f45', '#e6e8ea'];
-  for (let k = 0; k < 140; k++) S.confetti.push({ x: W / 2 + rnd(-40, 40), y: H / 2, vx: rnd(-6, 6), vy: rnd(-9, -2), color: pick(colors) });
+  const colors = ['#22e6a5', '#ffcc33', '#7c5cff', '#ff4d6d', '#7dd3fc', '#ffffff'];
+  for (let k = 0; k < 160; k++) S.confetti.push({ x: W / 2 + rnd(-40, 40), y: H / 2, vx: rnd(-7, 7), vy: rnd(-10, -2), color: pick(colors) });
 }
 function flash(color) {
   const el = document.getElementById('flash');
   el.style.background = color;
-  el.classList.remove('go'); void el.offsetWidth;   // restart the animation
+  el.classList.remove('go'); void el.offsetWidth;
   el.classList.add('go');
 }
 document.getElementById('flash').addEventListener('animationend', (e) => e.target.classList.remove('go'));
@@ -429,6 +444,7 @@ document.getElementById('flash').addEventListener('animationend', (e) => e.targe
 const $ = (id) => document.getElementById(id);
 function drawStats() {
   const v = pnl();
+  $('ticker').textContent = S.ticker;
   $('price').textContent = (S.price / 100).toFixed(2);
   $('pnl').textContent = fmt$(v); $('pnl').className = `big ${v > 0 ? 'pos' : v < 0 ? 'neg' : ''}`;
   $('posLabel').textContent = S.pos > 0 ? 'LONG' : S.pos < 0 ? 'SHORT' : 'FLAT';
@@ -474,6 +490,8 @@ window.addEventListener('keydown', (e) => {
   e.preventDefault();
 });
 try { mode = localStorage.getItem('rtt:mode') || 'normal'; lenS = Number(localStorage.getItem('rtt:len') || 60); } catch (e) { /* defaults */ }
+if (!MODES[mode]) mode = 'normal';
+if (lenS !== 60 && lenS !== 120) lenS = 60;
 function syncChips() {
   document.querySelectorAll('#lenChips .chip').forEach((c) => c.classList.toggle('on', Number(c.dataset.len) === lenS));
   document.querySelectorAll('#modeChips .chip').forEach((c) => c.classList.toggle('on', c.dataset.mode === mode));
@@ -484,22 +502,26 @@ document.querySelectorAll('#modeChips .chip').forEach((c) => { c.onclick = () =>
 
 const SIDE_HTML = $('side').innerHTML;
 function showStart() {
+  if (S && S.revealTimer) clearTimeout(S.revealTimer);
   reset(); syncChips();
+  lo = S.start * 0.99; hi = S.start * 1.01;
   $('overlay').style.display = 'flex';
   $('side').innerHTML = SIDE_HTML;
   $('news').innerHTML = '&nbsp;'; $('news').className = '';
   syncButtons();
 }
 function start() {
+  if (S && S.revealTimer) clearTimeout(S.revealTimer);
   try { localStorage.setItem('rtt:mode', mode); localStorage.setItem('rtt:len', String(lenS)); } catch (e) { /* fine */ }
   reset();
-  S.running = true; acc = 0; lo = 9900; hi = 10100;
+  S.running = true; acc = 0; lo = S.start * 0.99; hi = S.start * 1.01;
   $('overlay').style.display = 'none';
   $('side').innerHTML = SIDE_HTML;
-  $('news').textContent = 'quiet open. wait for the first headline.'; $('news').className = '';
+  $('news').textContent = `${S.ticker} opens at ${(S.start / 100).toFixed(2)}. wait for the first headline.`; $('news').className = '';
   syncButtons();
 }
 reset(); resize(); syncChips();
+lo = S.start * 0.99; hi = S.start * 1.01;
 $('startBtn').onclick = start;
 requestAnimationFrame(frame);
 </script>
