@@ -73,7 +73,7 @@
         <div class="box">
           <h2>MARKET MAKER</h2>
           <p>You are the market maker in one stock for 60 seconds.</p>
-          <p>Post a bid and an ask. Noise traders hit whichever quote is best, and you pocket the spread — but a hidden fair value drifts, competing quoters undercut you, and when news breaks an informed trader sweeps stale quotes before you can move.</p>
+          <p>Post a bid and an ask. Noise traders hit whichever quote is best, and you pocket the spread. But a hidden fair value drifts, competing quoters undercut you, and when news breaks an informed trader sweeps stale quotes before you can move.</p>
           <p>At the buzzer you are flattened at market. Inventory you're holding costs you the spread.</p>
           <button class="go" id="startBtn">START · 60s</button>
         </div>
@@ -91,8 +91,8 @@
             <div class="bar"><b></b><i id="invBar" style="left:50%;width:0"></i></div></div>
           <div class="stat"><span class="label">your fills</span><span class="v" id="fills">0</span></div>
           <div class="stat"><span class="label">picked off</span><span class="v neg" id="picked">0</span></div>
-          <div class="stat"><span class="label">your bid / ask</span><span class="v you" id="quotes">— / —</span></div>
-          <div class="stat"><span class="label">market</span><span class="v" id="mkt">— / —</span></div>
+          <div class="stat"><span class="label">your bid / ask</span><span class="v you" id="quotes">- / -</span></div>
+          <div class="stat"><span class="label">market</span><span class="v" id="mkt">- / -</span></div>
           <div class="stat"><span class="label">spread earned</span><span class="v" id="edge">$0.00</span></div>
         </div>
       </div>
@@ -227,7 +227,7 @@ function markedPnl(mid) { return S.cash + S.inv * mid; }
 // ---------------------------------------------------------------------------
 // Passive quoters: keep a ladder of resting orders around fair value. Depth
 // thins toward the touch and the touch itself is only intermittently quoted,
-// so a tight player quote is usually best — and usually the one that gets
+// so a tight player quote is usually best, and usually the one that gets
 // picked off when the price moves.
 function botQuote(seed = false) {
   const side = Math.random() < 0.5 ? 'buy' : 'sell';
@@ -243,7 +243,7 @@ function botQuote(seed = false) {
   S.book.rest({ side, price, qty, owner: 'bot', id: nextId++ });
 }
 // Cancel/replace: bot orders that drifted far from fair value, or ended up
-// on the wrong side of it, get pulled — but not instantly, which is what an
+// on the wrong side of it, get pulled, but not instantly, which is what an
 // informed sweep exploits.
 function botMaintain() {
   // Wrong-side orders (an ask below fair value after a jump) are what an
@@ -403,7 +403,7 @@ function endRound() {
 }
 function verdict(final, picked, inv) {
   if (final > 8000) return 'That is a real edge. Tight when it is quiet, gone when it is not.';
-  if (final > 0) return 'Profitable. Most of what you gave back went to the informed trader — pull faster on the flash.';
+  if (final > 0) return 'Profitable. Most of what you gave back went to the informed trader. Pull faster on the flash.';
   if (picked > 8) return 'The informed trader ate you. When the news flashes, hold space first and think second.';
   if (Math.abs(inv) > 150) return 'You carried too much inventory into the close. Skew your quotes to lean it off as you go.';
   return 'Spread earned did not cover adverse selection. Try quoting a tick wider and staying in the market.';
@@ -523,8 +523,8 @@ function drawStats() {
   const bar = $('invBar'), pct = Math.abs(S.inv) / MAX_INV * 50;
   bar.style.width = `${pct}%`; bar.style.left = S.inv >= 0 ? '50%' : `${50 - pct}%`;
   $('fills').textContent = S.fills; $('picked').textContent = S.picked;
-  $('quotes').textContent = `${S.myBid ? fmtP(S.myBid.price) : '—'} / ${S.myAsk ? fmtP(S.myAsk.price) : '—'}`;
-  $('mkt').textContent = `${m.bid != null ? fmtP(m.bid) : '—'} / ${m.ask != null ? fmtP(m.ask) : '—'}`;
+  $('quotes').textContent = `${S.myBid ? fmtP(S.myBid.price) : '-'} / ${S.myAsk ? fmtP(S.myAsk.price) : '-'}`;
+  $('mkt').textContent = `${m.bid != null ? fmtP(m.bid) : '-'} / ${m.ask != null ? fmtP(m.ask) : '-'}`;
   $('edge').textContent = fmt$(S.edge); $('edge').className = `v ${S.edge >= 0 ? 'pos' : 'neg'}`;
   $('tape').innerHTML = S.tape.map((t) =>
     `<div class="${t.you ? 'you' : ''}"><span class="t">${(t.t * TICK_MS / 1000).toFixed(1)}s</span>` +
