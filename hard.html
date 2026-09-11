@@ -1,0 +1,591 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Market Maker</title>
+<meta name="description" content="A 60-second market-making game: quote a two-sided market against noise flow, competing quoters, and an informed trader who trades on the news before you can react.">
+<style>
+  :root {
+    --bg: #000; --text: #e6e8ea; --muted: #6f767d; --divider: rgba(230,232,234,.14);
+    --hair: rgba(230,232,234,.08); --accent: #2563eb; --pos: #00c9a0; --neg: #ff2f45; --you: #ffd60a;
+  }
+  html, body { margin: 0; background: var(--bg); color: var(--text);
+    font: 12.5px/1.5 "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace; }
+  * { box-sizing: border-box; }
+  #app { max-width: 960px; margin: 0 auto; padding: 16px 16px 40px; }
+  header { display: flex; align-items: baseline; gap: 16px; margin-bottom: 12px; }
+  header h1 { font-size: 13px; letter-spacing: .3em; margin: 0; font-weight: 500; }
+  header .sub { color: var(--muted); font-size: 11px; }
+  header .src { margin-left: auto; color: var(--muted); font-size: 11px; text-decoration: none; }
+  .grid { display: grid; grid-template-columns: 380px 1fr; gap: 12px; }
+  @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
+  .panel { border: 1px solid var(--divider); padding: 10px 12px; position: relative; }
+  .label { font-size: 10.5px; letter-spacing: .16em; color: var(--muted); text-transform: uppercase; }
+  canvas { display: block; }
+  #ladder { width: 100%; touch-action: none; cursor: crosshair; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
+  .stat .label { display: block; }
+  .stat .v { font-size: 16px; }
+  .big { font-size: 26px; line-height: 1.1; }
+  .bar { height: 6px; background: var(--hair); position: relative; margin-top: 6px; }
+  .bar i { position: absolute; top: 0; bottom: 0; background: var(--you); }
+  .bar b { position: absolute; top: -2px; bottom: -2px; width: 1px; left: 50%; background: var(--muted); }
+  #news { min-height: 22px; font-size: 13px; letter-spacing: .04em; padding: 2px 0; }
+  #news.flash { animation: flash .35s steps(2) 4; }
+  @keyframes flash { 50% { background: var(--neg); color: #000; } }
+  #tape { font-size: 11.5px; line-height: 1.45; margin-top: 6px; }
+  #tape div { display: flex; gap: 10px; border-bottom: 1px solid var(--hair); }
+  #tape .t { color: var(--muted); width: 44px; }
+  #tape .p { width: 58px; }
+  #tape .q { width: 30px; text-align: right; color: var(--muted); }
+  #tape .you { color: var(--you); }
+  .keys { color: var(--muted); font-size: 11px; margin-top: 10px; line-height: 1.7; }
+  .keys b { color: var(--text); font-weight: 500; }
+  #overlay { position: absolute; inset: 0; background: rgba(0,0,0,.86); display: flex;
+    align-items: center; justify-content: center; text-align: center; padding: 20px; }
+  #overlay .box { max-width: 420px; }
+  #overlay h2 { font-size: 13px; letter-spacing: .3em; font-weight: 500; margin: 0 0 14px; }
+  #overlay p { color: var(--muted); margin: 6px 0; }
+  #overlay .score { font-size: 32px; margin: 10px 0; }
+  #overlay table { margin: 8px auto; border-collapse: collapse; }
+  #overlay td { padding: 2px 10px; text-align: right; }
+  #overlay td:first-child { text-align: left; color: var(--muted); }
+  button.go { margin-top: 14px; font: inherit; letter-spacing: .16em; padding: 10px 22px;
+    background: var(--accent); color: #fff; border: 0; cursor: pointer; }
+  .pos { color: var(--pos); } .neg { color: var(--neg); } .you { color: var(--you); }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>MARKET MAKER · HARD MODE</h1>
+    <span class="sub">quote both sides · earn the spread · don't get picked off</span>
+    <a class="src" href="index.html" style="margin-left:auto">← easy mode</a>
+    <a class="src" href="https://github.com/FazleRas/market-maker" style="margin-left:0">source</a>
+  </header>
+
+  <div class="grid">
+    <div class="panel" id="ladderPanel">
+      <div class="label">order book · click left: bid · right: ask</div>
+      <canvas id="ladder" width="356" height="512"></canvas>
+      <div id="overlay">
+        <div class="box">
+          <h2>MARKET MAKER</h2>
+          <p>You are the market maker in one stock for 60 seconds.</p>
+          <p>Post a bid and an ask. Noise traders hit whichever quote is best, and you pocket the spread — but a hidden fair value drifts, competing quoters undercut you, and when news breaks an informed trader sweeps stale quotes before you can move.</p>
+          <p>At the buzzer you are flattened at market. Inventory you're holding costs you the spread.</p>
+          <button class="go" id="startBtn">START · 60s</button>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <div><span class="label">p&amp;l (marked)</span><div class="big" id="pnl">$0.00</div></div>
+          <div style="text-align:right"><span class="label">time</span><div class="big" id="clock">60.0</div></div>
+        </div>
+        <div class="stats">
+          <div class="stat"><span class="label">inventory</span><span class="v" id="inv">0</span>
+            <div class="bar"><b></b><i id="invBar" style="left:50%;width:0"></i></div></div>
+          <div class="stat"><span class="label">your fills</span><span class="v" id="fills">0</span></div>
+          <div class="stat"><span class="label">picked off</span><span class="v neg" id="picked">0</span></div>
+          <div class="stat"><span class="label">your bid / ask</span><span class="v you" id="quotes">— / —</span></div>
+          <div class="stat"><span class="label">market</span><span class="v" id="mkt">— / —</span></div>
+          <div class="stat"><span class="label">spread earned</span><span class="v" id="edge">$0.00</span></div>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:12px">
+        <span class="label">news</span>
+        <div id="news">&nbsp;</div>
+      </div>
+      <div class="panel" style="margin-top:12px">
+        <span class="label">p&amp;l</span>
+        <canvas id="spark" width="520" height="70" style="width:100%"></canvas>
+      </div>
+      <div class="panel" style="margin-top:12px">
+        <span class="label">tape</span>
+        <div id="tape"></div>
+      </div>
+      <div class="keys">
+        <b>click</b> ladder to place · <b>↑ ↓</b> tighten / widen · <b>← →</b> skew down / up ·
+        <b>space</b> hold to pull both quotes · <b>R</b> restart
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+// ---------------------------------------------------------------------------
+// Prices are integer cents. Time is in simulation ticks (TICK_MS apart).
+// ---------------------------------------------------------------------------
+const TICK_MS = 50, ROUND_S = 60, TICKS = ROUND_S * 1000 / TICK_MS;
+const QUOTE_SIZE = 100, MAX_INV = 300, LADDER_ROWS = 31;
+// After a quote is taken in full it stays down this long before re-posting:
+// your window to react before you are exposed again.
+const REQUOTE_TICKS = 8;
+// How often your quotes re-peg to the market's mid on their own (600ms).
+const REPEG_TICKS = 12;
+const fmt$ = (c) => `${c < 0 ? '-' : ''}$${(Math.abs(c) / 100).toFixed(2)}`;
+const fmtP = (c) => (c / 100).toFixed(2);
+const rnd = (a, b) => a + Math.random() * (b - a);
+const rndi = (a, b) => Math.floor(rnd(a, b + 1));
+const gauss = () => { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+
+// ---------------------------------------------------------------------------
+// Matching engine: price-time priority. Bots and the player go through the
+// same add() so the player is never special-cased in the matching.
+// ---------------------------------------------------------------------------
+let nextId = 1;
+class Book {
+  constructor() { this.bids = []; this.asks = []; this.byId = new Map(); }
+  best(side) { const q = side === 'buy' ? this.bids : this.asks; return q.length ? q[0].price : null; }
+  // Best price excluding one owner's orders (the player's reference market).
+  bestExcluding(side, owner) {
+    for (const o of side === 'buy' ? this.bids : this.asks) if (o.owner !== owner) return o.price;
+    return null;
+  }
+  add(o) {
+    // o: {side, price|null (market), qty, owner}
+    o.id = nextId++;
+    const fills = [];
+    const book = o.side === 'buy' ? this.asks : this.bids;
+    const crosses = (p) => o.price == null || (o.side === 'buy' ? p <= o.price : p >= o.price);
+    while (o.qty > 0 && book.length && crosses(book[0].price)) {
+      const r = book[0];
+      const q = Math.min(o.qty, r.qty);
+      fills.push({ price: r.price, qty: q, aggressor: o, resting: r });
+      o.qty -= q; r.qty -= q;
+      if (r.qty === 0) { book.shift(); this.byId.delete(r.id); }
+    }
+    if (o.qty > 0 && o.price != null) this.rest(o);
+    return fills;
+  }
+  rest(o) {
+    const q = o.side === 'buy' ? this.bids : this.asks;
+    const better = o.side === 'buy' ? (a, b) => a > b : (a, b) => a < b;
+    let i = 0;
+    while (i < q.length && !better(o.price, q[i].price)) i++;   // strictly better goes ahead; equal goes behind (time priority)
+    q.splice(i, 0, o);
+    this.byId.set(o.id, o);
+  }
+  cancel(id) {
+    const o = this.byId.get(id);
+    if (!o) return false;
+    const q = o.side === 'buy' ? this.bids : this.asks;
+    const i = q.indexOf(o);
+    if (i >= 0) q.splice(i, 1);
+    this.byId.delete(id);
+    return true;
+  }
+  depth(side) {   // aggregated per price: Map price -> {qty, you}
+    const m = new Map();
+    for (const o of side === 'buy' ? this.bids : this.asks) {
+      const d = m.get(o.price) || { qty: 0, you: 0 };
+      d.qty += o.qty; if (o.owner === 'you') d.you += o.qty;
+      m.set(o.price, d);
+    }
+    return m;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Game state
+// ---------------------------------------------------------------------------
+const HEADLINES = {
+  up: ['GUIDANCE RAISED', 'TAKEOVER APPROACH', 'EARNINGS BEAT', 'FDA APPROVAL', 'BUYBACK ANNOUNCED', 'UPGRADE TO BUY'],
+  down: ['CEO RESIGNS', 'SHORT REPORT', 'GUIDANCE CUT', 'SEC INQUIRY', 'DOWNGRADE TO SELL', 'PLANT FIRE'],
+};
+
+let S;   // state
+function reset() {
+  S = {
+    book: new Book(), fv: 10000, tick: 0, running: false, over: false,
+    cash: 0, inv: 0, fills: 0, picked: 0, edge: 0,
+    bidOff: 2, askOff: 2, pulled: false, myBid: null, myAsk: null, bidReady: 0, askReady: 0,
+    pegMid: 10000, dirty: true,
+    news: null, nextNews: rndi(100, 180), informed: null,
+    tape: [], flashes: [], pnlHist: [], lastPnl: 0,
+  };
+  // seed the book
+  for (let i = 0; i < 60; i++) botQuote(true);
+}
+
+// Reference market = best bot bid/ask (your own quotes excluded).
+function refMarket() {
+  const b = S.book.bestExcluding('buy', 'you'), a = S.book.bestExcluding('sell', 'you');
+  const mid = b != null && a != null ? (b + a) / 2 : S.fv;
+  return { bid: b, ask: a, mid };
+}
+function markedPnl(mid) { return S.cash + S.inv * mid; }
+
+// ---------------------------------------------------------------------------
+// Bots
+// ---------------------------------------------------------------------------
+// Passive quoters: keep a ladder of resting orders around fair value. Depth
+// thins toward the touch and the touch itself is only intermittently quoted,
+// so a tight player quote is usually best — and usually the one that gets
+// picked off when the price moves.
+function botQuote(seed = false) {
+  const side = Math.random() < 0.5 ? 'buy' : 'sell';
+  const lvl = seed ? rndi(1, 12) : Math.min(12, Math.max(1, Math.round(Math.abs(gauss()) * 4 + 1)));
+  if (lvl === 1 && Math.random() < 0.6) return;              // the touch is thin
+  const price = Math.round(S.fv) + (side === 'buy' ? -lvl : lvl);
+  const qty = rndi(20, 40 + lvl * 10);
+  // Post-only: a passive quoter never crosses the book. Stale quotes after a
+  // jump are taken by the informed trader and by noise - not by the bots
+  // re-centring, which would sweep them before anyone could react.
+  const opp = S.book.best(side === 'buy' ? 'sell' : 'buy');
+  if (opp != null && (side === 'buy' ? price >= opp : price <= opp)) return;
+  S.book.rest({ side, price, qty, owner: 'bot', id: nextId++ });
+}
+// Cancel/replace: bot orders that drifted far from fair value, or ended up
+// on the wrong side of it, get pulled — but not instantly, which is what an
+// informed sweep exploits.
+function botMaintain() {
+  // Wrong-side orders (an ask below fair value after a jump) are what an
+  // informed trader feeds on. The bots pull them fast - ~100ms - which is
+  // the point: after the news, the slow quote left in the book is yours.
+  const doomed = [];
+  for (const o of S.book.byId.values()) {
+    if (o.owner !== 'bot') continue;
+    const dist = o.side === 'buy' ? S.fv - o.price : o.price - S.fv;
+    if (dist < 0.5) { if (Math.random() < 0.45) doomed.push(o); }
+    else if (dist > 14) { if (Math.random() < 0.3) doomed.push(o); }
+  }
+  for (const o of doomed) S.book.cancel(o.id);
+  const n = S.book.bids.length + S.book.asks.length;
+  const want = 70;
+  for (let i = 0; i < 3 && n + i < want + 10; i++) if (Math.random() < 0.8) botQuote();
+}
+function noiseTrader() {
+  if (Math.random() > 0.35) return;
+  const side = Math.random() < 0.5 ? 'buy' : 'sell';
+  applyFills(S.book.add({ side, price: null, qty: rndi(10, 60), owner: 'noise' }));
+}
+function newsTick() {
+  if (S.tick === S.nextNews) {
+    const dir = Math.random() < 0.5 ? 1 : -1;
+    const jump = dir * rndi(18, 44);
+    S.fv += jump;
+    S.news = { text: HEADLINES[dir > 0 ? 'up' : 'down'][rndi(0, 5)], dir, at: S.tick };
+    S.informed = { side: dir > 0 ? 'buy' : 'sell', until: S.tick + 36, n: 0 };
+    S.nextNews = S.tick + rndi(120, 210);
+    const el = document.getElementById('news');
+    el.textContent = `${dir > 0 ? '▲' : '▼'} ${S.news.text}`;
+    el.className = dir > 0 ? 'pos flash' : 'neg flash';
+    setTimeout(() => el.classList.remove('flash'), 1500);
+  }
+  // Informed flow: for ~1.5s after the news, trade in its direction while
+  // the touch is still on the wrong side of fair value. It ramps up, so a
+  // fast pull saves most of it, and it stops by itself once the market has
+  // repriced - an informed trader does not pay above fair value.
+  if (S.informed && S.tick < S.informed.until) {
+    const age = S.tick - (S.informed.until - 36);
+    const touch = S.book.best(S.informed.side === 'buy' ? 'sell' : 'buy');
+    const stale = touch != null && (S.informed.side === 'buy' ? touch < S.fv - 1 : touch > S.fv + 1);
+    // 150ms of headline before the first order, then small probes growing
+    // into full-size sweeps. A pull inside ~400ms dodges nearly all of it.
+    if (age >= 3 && stale && Math.random() < 0.05 + age * 0.03) {
+      applyFills(S.book.add({ side: S.informed.side, price: null, qty: rndi(15, 20 + age * 8), owner: 'informed' }));
+    }
+  } else S.informed = null;
+}
+
+// ---------------------------------------------------------------------------
+// Player
+// ---------------------------------------------------------------------------
+function requote() {
+  // Your quotes are pegged to the mid, but the peg only refreshes every
+  // REPEG_TICKS - or the instant you touch the controls. The informed trader
+  // is faster than your quoting engine; you are not, unless you act.
+  if (S.dirty || S.tick % REPEG_TICKS === 0) { S.pegMid = refMarket().mid; S.dirty = false; }
+  const mid = S.pegMid;
+  const wantBid = S.pulled || S.inv >= MAX_INV ? null : Math.floor(mid) - S.bidOff;
+  const wantAsk = S.pulled || S.inv <= -MAX_INV ? null : Math.ceil(mid) + S.askOff;
+  const sync = (cur, want, side, readyKey) => {
+    if (cur && cur.qty === 0) { cur = null; S[readyKey] = S.tick + REQUOTE_TICKS; }   // taken in full
+    if (cur && (want == null || cur.price !== want)) { S.book.cancel(cur.id); cur = null; }
+    if (!cur && want != null && S.tick >= S[readyKey]) {
+      const o = { side, price: want, qty: QUOTE_SIZE, owner: 'you' };
+      applyFills(S.book.add(o));      // a quote that crosses the bot book executes; that's on you
+      cur = o.qty > 0 ? o : null;
+    }
+    return cur;
+  };
+  S.myBid = sync(S.myBid, wantBid, 'buy', 'bidReady');
+  S.myAsk = sync(S.myAsk, wantAsk, 'sell', 'askReady');
+}
+
+function applyFills(fills) {
+  const m = refMarket();
+  for (const f of fills) {
+    const youBuy = (f.aggressor.owner === 'you' && f.aggressor.side === 'buy') ||
+                   (f.resting.owner === 'you' && f.resting.side === 'buy');
+    const youSell = (f.aggressor.owner === 'you' && f.aggressor.side === 'sell') ||
+                    (f.resting.owner === 'you' && f.resting.side === 'sell');
+    const you = youBuy || youSell;
+    if (you) {
+      const sign = youBuy ? 1 : -1;
+      S.inv += sign * f.qty;
+      S.cash -= sign * f.qty * f.price;
+      S.fills += 1;
+      // spread earned: how far inside fair value you traded, at the moment of the trade
+      S.edge += -sign * (f.price - S.fv) * f.qty;
+      if (f.aggressor.owner === 'informed') S.picked += 1;
+      S.flashes.push({ price: f.price, side: youBuy ? 'buy' : 'sell', at: performance.now() });
+    }
+    S.tape.unshift({ t: S.tick, price: f.price, qty: f.qty, side: f.aggressor.side, you, who: f.aggressor.owner });
+    if (S.tape.length > 12) S.tape.pop();
+  }
+}
+
+// Flatten at the end by crossing the bot book. Whatever the book can't
+// absorb clears at a punitive price - holding size into the close is a
+// choice, and this is what it costs.
+function liquidate() {
+  let inv = S.inv, proceeds = 0;
+  const side = inv > 0 ? 'sell' : 'buy';
+  const book = inv > 0 ? S.book.bids : S.book.asks;
+  for (const o of book) {
+    if (inv === 0) break;
+    if (o.owner === 'you') continue;
+    const q = Math.min(Math.abs(inv), o.qty);
+    proceeds += (inv > 0 ? 1 : -1) * q * o.price;
+    inv -= Math.sign(inv) * q;
+  }
+  if (inv !== 0) proceeds += inv * (S.fv - Math.sign(inv) * 40);
+  return { proceeds, side };
+}
+
+// ---------------------------------------------------------------------------
+// Simulation step
+// ---------------------------------------------------------------------------
+function step() {
+  S.tick++;
+  S.fv += gauss() * 0.25;
+  newsTick();
+  botMaintain();
+  noiseTrader();
+  requote();
+  if (S.tick % 4 === 0) S.pnlHist.push(markedPnl(refMarket().mid));
+  if (S.tick >= TICKS) endRound();
+}
+
+function endRound() {
+  S.running = false; S.over = true;
+  if (S.myBid) S.book.cancel(S.myBid.id);
+  if (S.myAsk) S.book.cancel(S.myAsk.id);
+  const marked = markedPnl(refMarket().mid);
+  const { proceeds } = liquidate();
+  const final = S.cash + proceeds;
+  const best = Math.max(final, Number(localStorage.getItem('mm:best') || -1e9));
+  try { localStorage.setItem('mm:best', String(best)); } catch (e) { /* private mode */ }
+  const cls = (v) => (v >= 0 ? 'pos' : 'neg');
+  document.querySelector('#overlay .box').innerHTML = `
+    <h2>ROUND OVER</h2>
+    <div class="score ${cls(final)}">${fmt$(final)}</div>
+    <table>
+      <tr><td>marked p&amp;l at the buzzer</td><td class="${cls(marked)}">${fmt$(marked)}</td></tr>
+      <tr><td>cost to flatten ${Math.abs(S.inv)} shares</td><td class="${cls(final - marked)}">${fmt$(final - marked)}</td></tr>
+      <tr><td>spread earned vs fair value</td><td class="${cls(S.edge)}">${fmt$(S.edge)}</td></tr>
+      <tr><td>fills</td><td>${S.fills}</td></tr>
+      <tr><td>picked off by informed flow</td><td class="neg">${S.picked}</td></tr>
+      <tr><td>best score</td><td>${fmt$(best)}</td></tr>
+    </table>
+    <p>${verdict(final, S.picked, S.inv)}</p>
+    <button class="go" id="startBtn">PLAY AGAIN</button>`;
+  document.getElementById('overlay').style.display = 'flex';
+  document.getElementById('startBtn').onclick = start;
+}
+function verdict(final, picked, inv) {
+  if (final > 8000) return 'That is a real edge. Tight when it is quiet, gone when it is not.';
+  if (final > 0) return 'Profitable. Most of what you gave back went to the informed trader — pull faster on the flash.';
+  if (picked > 8) return 'The informed trader ate you. When the news flashes, hold space first and think second.';
+  if (Math.abs(inv) > 150) return 'You carried too much inventory into the close. Skew your quotes to lean it off as you go.';
+  return 'Spread earned did not cover adverse selection. Try quoting a tick wider and staying in the market.';
+}
+
+// ---------------------------------------------------------------------------
+// Rendering
+// ---------------------------------------------------------------------------
+const ladder = document.getElementById('ladder'), lctx = ladder.getContext('2d');
+const spark = document.getElementById('spark'), sctx = spark.getContext('2d');
+const dpr = Math.min(window.devicePixelRatio || 1, 2);
+for (const c of [ladder, spark]) {
+  const w = c.width, h = c.height;
+  c.style.width = c.id === 'ladder' ? `${w}px` : '100%'; c.style.height = `${h}px`;
+  c.width = w * dpr; c.height = h * dpr; c.getContext('2d').scale(dpr, dpr);
+}
+const LW = 356, LH = 512, ROW = LH / LADDER_ROWS, MIDCOL = LW / 2, PRICE_W = 52;
+let topPrice = 10015;   // price shown on the top row; eases toward the market
+
+function rowY(price) { return (topPrice - price) * ROW; }
+
+function drawLadder(now) {
+  const m = refMarket();
+  const target = Math.round(m.mid) + (LADDER_ROWS >> 1);
+  topPrice += (target - topPrice) * 0.25;
+  if (Math.abs(target - topPrice) < 0.02) topPrice = target;
+
+  lctx.fillStyle = '#000'; lctx.fillRect(0, 0, LW, LH);
+  const bids = S.book.depth('buy'), asks = S.book.depth('sell');
+  const maxQ = 320, barMax = MIDCOL - PRICE_W / 2 - 6;
+  lctx.font = '11px "IBM Plex Mono", ui-monospace, Menlo, monospace';
+  lctx.textBaseline = 'middle';
+
+  for (let i = -1; i <= LADDER_ROWS; i++) {
+    const price = Math.round(topPrice) - i;
+    const y = rowY(price), cy = y + ROW / 2;
+    if (y < -ROW || y > LH) continue;
+    lctx.fillStyle = 'rgba(230,232,234,.05)'; lctx.fillRect(0, y + ROW - 1, LW, 1);
+    const b = bids.get(price), a = asks.get(price);
+    if (b) {
+      const w = Math.min(barMax, b.qty / maxQ * barMax);
+      lctx.fillStyle = 'rgba(0,201,160,.35)'; lctx.fillRect(MIDCOL - PRICE_W / 2 - w, y + 2, w, ROW - 4);
+      if (b.you) { const wy = Math.min(w, b.you / maxQ * barMax); lctx.fillStyle = '#ffd60a';
+        lctx.fillRect(MIDCOL - PRICE_W / 2 - w, y + 2, wy, ROW - 4); }
+      lctx.fillStyle = '#9ba2a9'; lctx.textAlign = 'right';
+      lctx.fillText(b.qty, MIDCOL - PRICE_W / 2 - w - 4, cy);
+    }
+    if (a) {
+      const w = Math.min(barMax, a.qty / maxQ * barMax);
+      lctx.fillStyle = 'rgba(255,47,69,.35)'; lctx.fillRect(MIDCOL + PRICE_W / 2, y + 2, w, ROW - 4);
+      if (a.you) { const wy = Math.min(w, a.you / maxQ * barMax); lctx.fillStyle = '#ffd60a';
+        lctx.fillRect(MIDCOL + PRICE_W / 2 + w - wy, y + 2, wy, ROW - 4); }
+      lctx.fillStyle = '#9ba2a9'; lctx.textAlign = 'left';
+      lctx.fillText(a.qty, MIDCOL + PRICE_W / 2 + w + 4, cy);
+    }
+    const isTouch = price === m.bid || price === m.ask;
+    lctx.fillStyle = isTouch ? '#e6e8ea' : '#6f767d';
+    lctx.textAlign = 'center'; lctx.fillText(fmtP(price), MIDCOL, cy);
+  }
+  // your quote markers
+  const mark = (o, side) => {
+    if (!o) return;
+    const y = rowY(o.price) + ROW / 2;
+    lctx.strokeStyle = '#ffd60a'; lctx.lineWidth = 1;
+    lctx.beginPath();
+    if (side === 'buy') { lctx.moveTo(0, y); lctx.lineTo(MIDCOL - PRICE_W / 2 - 2, y); }
+    else { lctx.moveTo(MIDCOL + PRICE_W / 2 + 2, y); lctx.lineTo(LW, y); }
+    lctx.stroke();
+    lctx.fillStyle = '#ffd60a'; lctx.font = 'bold 10px "IBM Plex Mono", ui-monospace, Menlo, monospace';
+    lctx.textAlign = side === 'buy' ? 'left' : 'right';
+    lctx.fillText(side === 'buy' ? `YOU ${o.qty}` : `${o.qty} YOU`, side === 'buy' ? 4 : LW - 4, y - 8);
+    lctx.font = '11px "IBM Plex Mono", ui-monospace, Menlo, monospace';
+  };
+  mark(S.myBid, 'buy'); mark(S.myAsk, 'sell');
+  if (S.pulled) {
+    lctx.fillStyle = '#ffd60a'; lctx.textAlign = 'center';
+    lctx.font = 'bold 12px "IBM Plex Mono", ui-monospace, Menlo, monospace';
+    lctx.fillText('QUOTES PULLED', MIDCOL, 14);
+  }
+  // fill flashes
+  S.flashes = S.flashes.filter((f) => now - f.at < 450);
+  for (const f of S.flashes) {
+    const t = 1 - (now - f.at) / 450;
+    lctx.fillStyle = f.side === 'buy' ? `rgba(0,201,160,${t})` : `rgba(255,47,69,${t})`;
+    lctx.beginPath(); lctx.arc(f.side === 'buy' ? MIDCOL - PRICE_W / 2 - 2 : MIDCOL + PRICE_W / 2 + 2,
+      rowY(f.price) + ROW / 2, 4 + (1 - t) * 6, 0, Math.PI * 2); lctx.fill();
+  }
+  // fair value is hidden; a faint informed-flow indicator is not
+  if (S.informed) {
+    lctx.fillStyle = 'rgba(255,47,69,.12)';
+    lctx.fillRect(0, 0, LW, LH);
+  }
+}
+
+function drawSpark() {
+  const w = spark.width / dpr, h = spark.height / dpr;
+  sctx.fillStyle = '#000'; sctx.fillRect(0, 0, w, h);
+  const hist = S.pnlHist;
+  if (hist.length < 2) return;
+  const lo = Math.min(0, ...hist), hi = Math.max(0, ...hist), span = hi - lo || 1;
+  const x = (i) => (i / (TICKS / 4)) * w, y = (v) => h - 4 - (v - lo) / span * (h - 8);
+  sctx.strokeStyle = 'rgba(230,232,234,.2)'; sctx.beginPath(); sctx.moveTo(0, y(0)); sctx.lineTo(w, y(0)); sctx.stroke();
+  const last = hist[hist.length - 1];
+  sctx.strokeStyle = last >= 0 ? '#00c9a0' : '#ff2f45'; sctx.lineWidth = 1.5; sctx.beginPath();
+  hist.forEach((v, i) => (i ? sctx.lineTo(x(i), y(v)) : sctx.moveTo(x(i), y(v))));
+  sctx.stroke();
+}
+
+const $ = (id) => document.getElementById(id);
+function drawStats() {
+  const m = refMarket();
+  const pnl = markedPnl(m.mid);
+  $('pnl').textContent = fmt$(pnl); $('pnl').className = `big ${pnl >= 0 ? 'pos' : 'neg'}`;
+  $('clock').textContent = Math.max(0, (TICKS - S.tick) * TICK_MS / 1000).toFixed(1);
+  $('inv').textContent = `${S.inv > 0 ? '+' : ''}${S.inv}`;
+  $('inv').className = `v ${Math.abs(S.inv) >= MAX_INV ? 'neg' : ''}`;
+  const bar = $('invBar'), pct = Math.abs(S.inv) / MAX_INV * 50;
+  bar.style.width = `${pct}%`; bar.style.left = S.inv >= 0 ? '50%' : `${50 - pct}%`;
+  $('fills').textContent = S.fills; $('picked').textContent = S.picked;
+  $('quotes').textContent = `${S.myBid ? fmtP(S.myBid.price) : '—'} / ${S.myAsk ? fmtP(S.myAsk.price) : '—'}`;
+  $('mkt').textContent = `${m.bid != null ? fmtP(m.bid) : '—'} / ${m.ask != null ? fmtP(m.ask) : '—'}`;
+  $('edge').textContent = fmt$(S.edge); $('edge').className = `v ${S.edge >= 0 ? 'pos' : 'neg'}`;
+  $('tape').innerHTML = S.tape.map((t) =>
+    `<div class="${t.you ? 'you' : ''}"><span class="t">${(t.t * TICK_MS / 1000).toFixed(1)}s</span>` +
+    `<span class="p ${t.side === 'buy' ? 'pos' : 'neg'}">${fmtP(t.price)}</span><span class="q">${t.qty}</span>` +
+    `<span>${t.side === 'buy' ? 'BUY' : 'SELL'}${t.you ? ' · you' : ''}${t.who === 'informed' ? ' · informed' : ''}</span></div>`).join('');
+}
+
+// ---------------------------------------------------------------------------
+// Input
+// ---------------------------------------------------------------------------
+function placeAt(e) {
+  if (!S.running) return;
+  const r = ladder.getBoundingClientRect();
+  const x = (e.clientX - r.left) * (LW / r.width), yy = (e.clientY - r.top) * (LH / r.height);
+  const price = Math.round(topPrice) - Math.floor(yy / ROW);
+  const m = refMarket();
+  if (x < MIDCOL) S.bidOff = Math.max(0, Math.floor(m.mid) - price);
+  else S.askOff = Math.max(0, price - Math.ceil(m.mid));
+  S.dirty = true;
+}
+ladder.addEventListener('pointerdown', (e) => { ladder.setPointerCapture(e.pointerId); placeAt(e); });
+ladder.addEventListener('pointermove', (e) => { if (e.buttons) placeAt(e); });
+window.addEventListener('keydown', (e) => {
+  if (e.repeat && e.key === ' ') return;
+  switch (e.key) {
+    case 'ArrowUp': S.bidOff = Math.max(0, S.bidOff - 1); S.askOff = Math.max(0, S.askOff - 1); break;
+    case 'ArrowDown': S.bidOff++; S.askOff++; break;
+    case 'ArrowLeft': S.bidOff++; S.askOff = Math.max(0, S.askOff - 1); break;   // lean lower: sell inventory
+    case 'ArrowRight': S.bidOff = Math.max(0, S.bidOff - 1); S.askOff++; break;  // lean higher: buy inventory
+    case ' ': S.pulled = true; break;
+    case 'r': case 'R': start(); break;
+    default: return;
+  }
+  S.dirty = true;
+  e.preventDefault();
+});
+window.addEventListener('keyup', (e) => { if (e.key === ' ') { S.pulled = false; S.dirty = true; } });
+window.addEventListener('blur', () => { S.pulled = false; S.dirty = true; });
+
+// ---------------------------------------------------------------------------
+// Loop
+// ---------------------------------------------------------------------------
+let last = 0, acc = 0;
+function frame(now) {
+  if (S.running) {
+    acc += Math.min(now - last, 250);
+    while (acc >= TICK_MS && S.running) { acc -= TICK_MS; step(); }
+  }
+  last = now;
+  drawLadder(now); drawStats(); drawSpark();
+  requestAnimationFrame(frame);
+}
+function start() {
+  reset();
+  S.running = true; acc = 0;
+  document.getElementById('overlay').style.display = 'none';
+  const el = $('news'); el.textContent = 'quiet market'; el.className = '';
+}
+reset();
+document.getElementById('startBtn').onclick = start;
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

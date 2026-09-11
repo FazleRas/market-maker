@@ -1,11 +1,9 @@
-# Market Maker
+# Read the Tape
 
-A 60-second market-making game in one HTML file. You quote a bid and an ask in
-one stock; noise traders hit whichever quote is best and you pocket the spread.
-Meanwhile a hidden fair value drifts, competing quoters undercut you, and when
-news breaks an informed trader sweeps stale quotes before you can move. At the
-buzzer you are flattened at market, so inventory you are still holding costs
-you the spread.
+A 60-second trading game in one HTML file. A stock trades in front of you;
+every few seconds a headline hits and the price moves — usually the way the
+headline says, sometimes not. Go long, go short, or stay flat. At the end you
+see how much of the available move you actually caught.
 
 **[Play it](https://fazleras.github.io/market-maker/)** — no build, no backend,
 nothing to install.
@@ -14,60 +12,46 @@ nothing to install.
 
 | Input | Action |
 |---|---|
-| click the ladder | left half places your bid at that price, right half your ask |
-| `↑` / `↓` | tighten / widen both quotes by a tick |
-| `←` / `→` | skew both quotes down / up (lean inventory off) |
-| `space` (hold) | pull both quotes |
+| `BUY` · `↑` · `B` | go long 100 shares |
+| `FLAT` · `space` · `F` | close out |
+| `SELL` · `↓` · `S` | go short 100 shares |
 | `R` | restart |
 
-Quotes are 100 shares and are expressed as offsets from the market's mid, so
-they follow the price — but the peg only refreshes every 600 ms on its own,
-or the instant you touch a control. That is the whole game: the competing
-quoters reprice within ~100 ms of news and the informed trader is faster
-still, so after a headline the slow quote left in the book is yours until you
-move it. Inventory is capped at ±300: at the cap, the side that would add to
-it stops quoting. After a quote is taken in full it stays down for 400 ms
-before re-posting.
+Every switch costs the spread (2 ¢ a share, $2 a flip), so flapping between
+buttons loses money on its own. The chart shades green while you are long and
+red while you are short, so the finished round is a picture of where you were
+right.
 
-Things that separate a good round from a bad one:
+One headline in four is a fake-out: the price starts the way the headline
+says, then reverses through where it began. The tell is the line, not the
+text — if the move stalls, it is not going.
 
-- **Tight when it is quiet.** The touch is only intermittently quoted by the
-  bots, so a quote one tick inside them gets all the noise flow.
-- **Gone when it is not.** The news ticker flashes at the same moment fair
-  value jumps and the informed trader starts sweeping. Hold space first, think
-  second. The sweep ramps up over 1.5 s and stops on its own once the market
-  has repriced, so a fast pull saves most of it.
-- **Lean inventory off as you go.** Long 300 shares into a downside headline
-  is how rounds end badly. Skew your quotes to get flat.
+## The score
+
+**Market-reading score** is your P&L as a percentage of a hindsight oracle's:
+a trader who, on the same price path, holds the true direction of every
+headline for its whole move (including the reversal of a fake-out), is flat in
+between, and pays the same spread. 100% means you caught everything there was
+to catch. The results also show buy & hold, headlines called right, average
+reaction time from headline to being on the right side, and what you paid in
+spread.
 
 ## How it works
 
-Everything runs through one matching engine with price-time priority: limit
-and market orders, bots and you alike, in integer cents. The player is never
-special-cased in the matching.
+Price is a random walk (σ = 1 ¢ per 50 ms tick) plus headline moves: each
+headline pushes the price 25–70 ¢ over 2–5 seconds at a constant rate. A
+fake-out pushes for the first 35% of that window and then reverses at 1.4×.
+Headlines are spaced so that moves never overlap.
 
-Three kinds of bot, on a 50 ms tick:
+## Hard mode
 
-- **Passive quoters** keep a ladder of resting orders around fair value —
-  thicker away from the touch, thin and intermittent at it. Orders that end
-  up on the wrong side of fair value are pulled with a ~100 ms lag, orders
-  that drift too far with a slower one.
-- **Noise traders** send market orders at ~7/s, sizes 10–60, random side.
-  This is the flow you are paid to absorb.
-- **The informed trader** wakes on each news event, which jumps fair value by
-  18–44 cents. Starting 150 ms after the headline it sends market orders in
-  the news direction, small probes first and full-size sweeps by the end of
-  the 1.8 s window — but only while the touch is still on the wrong side of
-  fair value. It never pays above fair value, so the sweep is self-limiting.
-
-Fair value itself is a random walk (σ = 0.25 ¢ per tick) plus the jumps. You
-never see it; you see the book, the tape, and the headline.
-
-Scoring: marked P&L (cash + inventory × mid) is shown live. The final score
-crosses the bot book to flatten whatever you hold; size the book cannot absorb
-clears 40 ¢ through fair value. "Spread earned" is each fill's distance inside
-fair value at the moment it happened — the honest measure of whether your
-quotes were good, separate from how the position moved afterwards.
+[`hard.html`](hard.html) is the same idea with the training wheels off: you
+are the market maker, quoting a bid and an ask into a live order book with
+price-time priority, against passive quoters, noise flow, and an informed
+trader who sweeps your stale quote 150 ms after the headline unless you pull
+it first. It has its own matching engine and its own calibration story; see
+the source. It is a lot to read in 60 seconds, which is why it is not the
+front door.
 
 ## Run locally
 
