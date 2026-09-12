@@ -31,7 +31,10 @@ Pick a length (60 seconds or 2 minutes) and a mode:
 
 ## What a headline can do
 
-- **Real.** The price moves 1.5% to 4% the way the headline says, over 2 to 5 seconds.
+- **Real.** The price moves 1.5% to 4.5% the way the headline says, over 1.5
+  to 6 seconds, in a random shape: a spike that fades, a slow build that
+  accelerates, an S-curve, an overshoot that gives some back, a staircase, or
+  a straight line. Between headlines the price drifts and wiggles on its own.
 - **Fakeout.** It starts the right way, then reverses through where it began.
 - **Dud.** Headline hits, nothing happens.
 - **Silent dump.** A real move finishes, and a few seconds later the price
@@ -43,8 +46,9 @@ The only reliable tell is the line. If it stalls, the move is over.
 ## The rating
 
 Your P&L is compared with perfect hindsight: a trader who, on the same
-price path, holds the true side of every move, is flat in between, and pays
-the same spread. Match it and you get 5 stars. Lose as much as it made and
+price path, holds the true side of every move, is flat in between, pays the
+same spread, and still needs 300 ms to act, the same as you. Match it and
+you get 5 stars. Lose as much as it made and
 you get -5. Each star is 20% of the way.
 
 | Stars | Title |

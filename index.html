@@ -6,83 +6,82 @@
 <title>Read the Tape</title>
 <meta name="description" content="A trading game. Headlines move the price. Buy, sell, or stay flat, and get rated from -5 to 5 stars on how well you read the market.">
 <style>
-  :root { --bg: #0b0d1a; --bg2: #141833; --panel: rgba(255,255,255,.035); --text: #eef0f6; --muted: #8b90a7;
-    --divider: rgba(255,255,255,.12); --hair: rgba(255,255,255,.07); --accent: #7c5cff; --pos: #22e6a5; --neg: #ff4d6d;
-    --gold: #ffcc33; --cyan: #7dd3fc; }
-  html, body { margin: 0; color: var(--text); min-height: 100%;
-    background: radial-gradient(1200px 600px at 20% -10%, #2a1f5e 0%, transparent 60%),
-                radial-gradient(900px 500px at 100% 100%, #0f3d3a 0%, transparent 55%), var(--bg);
+  :root { --bg: #111633; --panel: #1a2048; --line: #2c3470; --text: #f2f3fa; --muted: #9aa0c2;
+    --purple: #7c5cff; --pos: #1fe0a0; --neg: #ff4d6d; --gold: #ffcc33; --cyan: #6fd0ff; --ink: #0b0e22; }
+  html, body { margin: 0; background: var(--bg); color: var(--text);
     font: 13px/1.5 "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace; }
   * { box-sizing: border-box; }
   #app { max-width: 920px; margin: 0 auto; padding: 16px 16px 40px; }
-  header { display: flex; align-items: baseline; gap: 16px; margin-bottom: 12px; flex-wrap: wrap; }
-  header h1 { font-size: 15px; letter-spacing: .3em; margin: 0; font-weight: 600;
-    background: linear-gradient(90deg, var(--pos), var(--gold)); -webkit-background-clip: text; background-clip: text; color: transparent; }
-  header .sub { color: var(--muted); font-size: 11px; }
+  header { display: flex; align-items: baseline; gap: 16px; margin-bottom: 12px; }
+  header h1 { font-size: 15px; letter-spacing: .3em; margin: 0; font-weight: 700; color: var(--gold); }
   header .src { margin-left: auto; color: var(--muted); font-size: 11px; text-decoration: none; }
-  .panel { border: 1px solid var(--divider); background: var(--panel); border-radius: 10px; padding: 12px 14px; }
+  .panel { border: 2px solid var(--line); background: var(--panel); border-radius: 8px; padding: 12px 14px; }
   .label { font-size: 10.5px; letter-spacing: .16em; color: var(--muted); text-transform: uppercase; }
-  #chart { display: block; width: 100%; height: 330px; border-radius: 8px; }
+  #chart { display: block; width: 100%; height: 330px; border-radius: 6px; }
   .top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
   .big { font-size: 28px; line-height: 1.1; }
-  #news { font-size: 16px; letter-spacing: .04em; min-height: 30px; margin: 6px 0; padding: 2px 10px; border-radius: 6px;
-    display: inline-block; }
-  #news.pos { background: rgba(34,230,165,.15); } #news.neg { background: rgba(255,77,109,.15); }
+  #news { font-size: 16px; letter-spacing: .04em; min-height: 30px; margin: 6px 0; padding: 2px 10px; border-radius: 4px; display: inline-block; }
+  #news.pos { background: var(--pos); color: var(--ink); } #news.neg { background: var(--neg); color: var(--ink); }
   .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
   @media (max-width: 640px) { .row { grid-template-columns: 1fr; } }
   .btns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
-  .btns button { font: inherit; font-size: 16px; font-weight: 600; letter-spacing: .2em; padding: 24px 0; border: 1px solid var(--divider);
-    border-radius: 8px; background: rgba(255,255,255,.04); color: var(--muted); cursor: pointer; transition: transform 80ms, box-shadow 120ms; }
+  .btns button { font: inherit; font-size: 16px; font-weight: 700; letter-spacing: .2em; padding: 24px 0; border: 2px solid var(--line);
+    border-radius: 6px; background: var(--bg); color: var(--muted); cursor: pointer; transition: transform 80ms; }
   .btns button:hover { color: var(--text); border-color: var(--text); }
   .btns button:active { transform: scale(.96); }
-  .btns button.on { color: #0b0d1a; border-color: transparent; }
-  #buyBtn.on { background: linear-gradient(180deg, #4ff0bd, #16c48c); box-shadow: 0 0 24px rgba(34,230,165,.45); }
-  #flatBtn.on { background: linear-gradient(180deg, #ffffff, #c9cde0); box-shadow: 0 0 18px rgba(255,255,255,.25); }
-  #sellBtn.on { background: linear-gradient(180deg, #ff7a94, #ff2f57); box-shadow: 0 0 24px rgba(255,77,109,.45); }
+  .btns button.on { color: var(--ink); border-color: transparent; }
+  #buyBtn.on { background: var(--pos); } #flatBtn.on { background: #ffffff; } #sellBtn.on { background: var(--neg); }
   .keys { color: var(--muted); font-size: 11px; margin-top: 10px; }
   .keys b { color: var(--text); font-weight: 500; }
   .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; margin-top: 6px; }
   .stat .label { display: block; }
   .stat .v { font-size: 20px; }
-  table { border-collapse: collapse; width: 100%; margin-top: 10px; }
-  td { padding: 4px 0; border-bottom: 1px solid var(--hair); }
-  td:last-child { text-align: right; }
-  td:first-child { color: var(--muted); }
-  .rating { font-size: 40px; line-height: 1.1; margin-top: 6px; letter-spacing: .04em; animation: pop 500ms cubic-bezier(.2,1.6,.4,1); }
-  .title { font-size: 20px; font-weight: 600; letter-spacing: .1em; margin: 2px 0; animation: pop 500ms 120ms both cubic-bezier(.2,1.6,.4,1); }
-  .roast { font-size: 15px; color: var(--text); margin: 6px 0 2px; animation: pop 500ms 240ms both cubic-bezier(.2,1.6,.4,1); }
-  @keyframes pop { from { transform: scale(.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-  .loading { padding: 26px 0 10px; }
-  .loading .label { display: block; margin-bottom: 10px; }
-  .bar { height: 8px; border-radius: 4px; background: var(--hair); overflow: hidden; }
-  .bar i { display: block; height: 100%; width: 0; border-radius: 4px; background: linear-gradient(90deg, var(--accent), var(--cyan)); animation: fill 1400ms ease-in-out forwards; }
-  @keyframes fill { to { width: 100%; } }
-  button.go { margin-top: 12px; width: 100%; font: inherit; font-size: 14px; font-weight: 600; letter-spacing: .16em; padding: 14px;
-    border-radius: 8px; background: linear-gradient(180deg, #9b7dff, #6a48f5); color: #fff; border: 0; cursor: pointer;
-    box-shadow: 0 6px 24px rgba(124,92,255,.35); }
-  button.go:active { transform: scale(.98); }
-  .pos { color: var(--pos); } .neg { color: var(--neg); } .gold { color: var(--gold); }
-  #overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-    background: rgba(11,13,26,.88); text-align: center; padding: 20px; border-radius: 10px; }
-  #overlay p { color: var(--muted); max-width: 420px; margin: 6px auto; }
-  #overlay .rules { color: var(--text); font-size: 14px; line-height: 1.7; margin: 10px auto; }
-  #overlay .rules b { font-weight: 600; letter-spacing: .1em; }
-  #overlay .pick { margin: 14px 0 4px; }
-  .chips { display: inline-flex; gap: 6px; margin: 4px 0 10px; flex-wrap: wrap; justify-content: center; }
-  .chip { font: inherit; font-size: 11px; letter-spacing: .16em; padding: 7px 14px; border: 1px solid var(--divider); border-radius: 999px;
-    background: transparent; color: var(--muted); cursor: pointer; }
-  .chip.on { border-color: var(--text); color: var(--text); background: rgba(255,255,255,.08); }
-  .chip.calm.on { border-color: var(--pos); color: var(--pos); background: rgba(34,230,165,.12); }
-  .chip.chaos.on { border-color: var(--neg); color: var(--neg); background: rgba(255,77,109,.12); }
   .hard { color: var(--muted); font-size: 11px; margin-top: 14px; }
   .hard a { color: var(--muted); }
+  .pos { color: var(--pos); } .neg { color: var(--neg); } .gold { color: var(--gold); }
+  button.go { font: inherit; font-size: 14px; font-weight: 700; letter-spacing: .16em; padding: 14px 28px;
+    border-radius: 6px; background: var(--purple); color: #fff; border: 0; cursor: pointer; }
+  button.go:active { transform: scale(.98); }
+  button.ghost { background: transparent; color: var(--muted); border: 2px solid var(--line); }
+  #overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    background: rgba(17,22,51,.92); text-align: center; padding: 20px; border-radius: 8px; }
+  #overlay .rules { color: var(--text); font-size: 14px; line-height: 1.7; margin: 10px auto; max-width: 440px; }
+  #overlay .rules b { font-weight: 700; letter-spacing: .1em; }
+  #overlay .pick { margin: 14px 0 4px; }
+  .chips { display: inline-flex; gap: 6px; margin: 4px 0 10px; flex-wrap: wrap; justify-content: center; }
+  .chip { font: inherit; font-size: 11px; letter-spacing: .16em; padding: 7px 14px; border: 2px solid var(--line); border-radius: 999px;
+    background: transparent; color: var(--muted); cursor: pointer; }
+  .chip.on { border-color: var(--text); color: var(--text); }
+  .chip.calm.on { border-color: var(--pos); color: var(--pos); }
+  .chip.chaos.on { border-color: var(--neg); color: var(--neg); }
+  /* end-of-round popup, old browser game style */
+  #modal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(11,14,34,.7); z-index: 10; padding: 16px; }
+  #modal.show { display: flex; }
+  .box { width: 100%; max-width: 420px; background: var(--panel); border: 3px solid var(--gold); border-radius: 8px;
+    box-shadow: 8px 8px 0 var(--ink); padding: 22px 24px 20px; text-align: center; animation: drop 250ms ease-out; }
+  @keyframes drop { from { transform: translateY(-30px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .box h2 { margin: 0 0 6px; font-size: 13px; letter-spacing: .3em; font-weight: 700; color: var(--muted); }
+  .box .bar { height: 10px; border: 2px solid var(--line); border-radius: 5px; margin: 22px 0 8px; overflow: hidden; }
+  .box .bar i { display: block; height: 100%; width: 0; background: var(--cyan); animation: fill 1400ms ease-in-out forwards; }
+  @keyframes fill { to { width: 100%; } }
+  .rating { font-size: 44px; line-height: 1.1; margin-top: 6px; letter-spacing: .04em; animation: pop 450ms cubic-bezier(.2,1.6,.4,1); }
+  .title { font-size: 20px; font-weight: 700; letter-spacing: .12em; margin: 2px 0; animation: pop 450ms 100ms both cubic-bezier(.2,1.6,.4,1); }
+  .roast { font-size: 15px; margin: 8px 0 4px; animation: pop 450ms 200ms both cubic-bezier(.2,1.6,.4,1); }
+  @keyframes pop { from { transform: scale(.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .box table { border-collapse: collapse; width: 100%; margin: 12px 0 4px; }
+  .box td { padding: 4px 0; border-bottom: 1px solid var(--line); }
+  .box td:last-child { text-align: right; }
+  .box td:first-child { color: var(--muted); text-align: left; }
+  .box .actions { display: flex; gap: 8px; margin-top: 14px; }
+  .box .actions button { flex: 1; }
   #flash { position: fixed; inset: 0; pointer-events: none; opacity: 0; }
-  #flash.go { animation: flashfade 600ms ease-out; }
-  @keyframes flashfade { from { opacity: 1; } to { opacity: 0; } }
+  #flash.go { animation: flashfade 500ms ease-out; }
+  @keyframes flashfade { from { opacity: .35; } to { opacity: 0; } }
 </style>
 </head>
 <body>
 <div id="flash"></div>
+<div id="modal"><div class="box" id="modalBox"></div></div>
 <div id="app">
   <header>
     <h1>READ THE TAPE</h1>
@@ -101,7 +100,7 @@
     <canvas id="chart"></canvas>
     <div id="overlay">
       <div>
-        <div style="letter-spacing:.3em;font-size:14px">READ THE TAPE</div>
+        <div style="letter-spacing:.3em;font-size:14px;color:var(--gold);font-weight:700">READ THE TAPE</div>
         <p class="rules"><span class="pos">▲ headline</span> usually means up. <span class="neg">▼ headline</span> usually means down. Sometimes it lies.</p>
         <p class="rules"><b>BUY</b> when it goes up. <b>SELL</b> when it goes down. <b>FLAT</b> when unsure.</p>
         <div class="pick"><span class="label">length</span></div>
@@ -116,7 +115,7 @@
           <button class="chip chaos" data-mode="chaos">CHAOS</button>
         </div>
         <div id="modeHint" style="color:var(--muted);font-size:11px;min-height:18px"></div>
-        <button class="go" id="startBtn" style="width:auto;padding:12px 32px">START</button>
+        <button class="go" id="startBtn" style="margin-top:12px">START</button>
       </div>
     </div>
   </div>
@@ -164,9 +163,9 @@ const HEADLINES = {
          'SUPPLIER WARNS', 'PRICE WAR', 'TARIFFS HIT', 'DROPPED FROM INDEX', 'FACTORY STRIKE'],
 };
 const MODES = {
-  calm:   { fake: .18, dud: .08, dump: .10, gap: [50, 100], dur: [50, 110], hint: 'Fewer tricks. Headlines mostly mean what they say.' },
-  normal: { fake: .35, dud: .10, dump: .30, gap: [40, 80],  dur: [40, 100], hint: 'A third of headlines reverse. Good news can still dump.' },
-  chaos:  { fake: .50, dud: .12, dump: .45, gap: [25, 55],  dur: [30, 80],  hint: 'Half of headlines reverse. Trust the line, not the words.' },
+  calm:   { fake: .18, dud: .08, dump: .10, gap: [50, 100], dur: [40, 120], hint: 'Fewer tricks. Headlines mostly mean what they say.' },
+  normal: { fake: .35, dud: .10, dump: .30, gap: [40, 80],  dur: [30, 120], hint: 'A third of headlines reverse. Good news can still dump.' },
+  chaos:  { fake: .50, dud: .12, dump: .45, gap: [25, 55],  dur: [25, 100], hint: 'Half of headlines reverse. Trust the line, not the words.' },
 };
 const TITLES = {
   5: 'TAPE READER', 4: 'SHARP', 3: 'SOLID', 2: 'GETTING THERE', 1: 'SCRATCHED A PROFIT', 0: 'FLAT',
@@ -186,6 +185,20 @@ const ROASTS = {
   '-5': ['Liquidated.', 'Margin call.', 'Delete the app.', 'Inverse this person.'],
 };
 
+// Move shapes: cumulative fraction of the move at progress u in [0, 1].
+// A headline picks one at random, so the same-sized move can be a spike
+// that fades, a slow build that accelerates, an S-curve, an overshoot that
+// gives some back, or a staircase.
+const SHAPES = {
+  sharp:     (u) => 1 - Math.pow(1 - u, 3),                       // fast then flattens, log-like
+  accel:     (u) => u * u,                                        // slow start, x squared
+  steady:    (u) => u,
+  scurve:    (u) => u * u * (3 - 2 * u),
+  overshoot: (u) => 1.25 * (1 - Math.pow(1 - u, 3)) - 0.25 * u * u * u,   // peaks ~12% past the target, retraces
+  stairs:    (u) => { const k = Math.floor(u * 4), f = u * 4 - k; return Math.min(1, k / 4 + Math.min(1, f * 3) / 4); },
+};
+const shapeNames = Object.keys(SHAPES);
+
 let mode = 'normal', lenS = 60, TICKS = 1200;
 let S;
 function reset() {
@@ -193,22 +206,22 @@ function reset() {
   const start = rndi(80, 400) * 100 + rndi(0, 99);
   S = { tick: 0, running: false, over: false, ticker: pick(TICKERS), start, price: start, hist: [start], pos: 0, cash: 0, fees: 0, trades: 0,
         posHist: [0], events: [], nextEvent: rndi(40, 80), pending: [], entry: null, popups: [], confetti: [],
-        streak: 0, bestStreak: 0 };
+        streak: 0, bestStreak: 0, drift: 0, driftUntil: 0 };
 }
-// Spread per share scales with price: 2 basis points, at least a cent.
 const spread = (price) => Math.max(1, Math.round(price * 0.0002));
 
 // ---------------------------------------------------------------------------
-// Events. Sizes are a percentage of the price so a $300 stock moves dollars.
+// Events
 // ---------------------------------------------------------------------------
 function addEvent(dir, kind, size, dur, text) {
-  const e = { at: S.tick, end: S.tick + dur, dir, kind, size, dur, text, resolved: false };
+  const e = { at: S.tick, end: S.tick + dur, dir, kind, size, dur, text, resolved: false,
+              shape: pick(shapeNames), shape2: pick(shapeNames), done: 0 };
   S.events.push(e);
   if (text) {
     const el = document.getElementById('news');
     el.textContent = `${dir > 0 ? '▲' : '▼'} ${S.ticker}: ${text}`;
     el.className = dir > 0 ? 'pos' : 'neg';
-    flash(dir > 0 ? 'rgba(34,230,165,.28)' : 'rgba(255,77,109,.28)');
+    flash(dir > 0 ? '#1fe0a0' : '#ff4d6d');
   }
   return e;
 }
@@ -218,10 +231,10 @@ function scheduleHeadline() {
   const r = Math.random();
   const kind = r < M.fake ? 'fake' : r < M.fake + M.dud ? 'dud' : 'real';
   const dur = rndi(M.dur[0], M.dur[1]);
-  const size = Math.round(S.price * (kind === 'dud' ? rnd(0.001, 0.003) : rnd(0.015, 0.04)));
+  const size = Math.round(S.price * (kind === 'dud' ? rnd(0.001, 0.003) : rnd(0.015, 0.045)));
   const e = addEvent(dir, kind, size, dur, pick(HEADLINES[dir > 0 ? 'up' : 'down']));
   if (kind === 'real' && Math.random() < M.dump) {
-    S.pending.push({ at: e.end + rndi(30, 80), dir: -dir, size: Math.round(size * rnd(0.7, 1.3)), dur: rndi(30, 70) });
+    S.pending.push({ at: e.end + rndi(30, 80), dir: -dir, size: Math.round(size * rnd(0.7, 1.3)), dur: rndi(30, 90) });
   }
   S.nextEvent = e.end + rndi(M.gap[0], M.gap[1]);
 }
@@ -230,12 +243,17 @@ function truth(e, age) {
   if (e.kind === 'fake') return age < e.dur * 0.35 ? e.dir : -e.dir;
   return e.dir;
 }
-function eventDrift(e, age) {
-  if (age < 0 || age >= e.dur) return 0;
-  const v = e.size / e.dur;
-  if (e.kind === 'dud') return e.dir * v * (age < e.dur * 0.5 ? 1 : -1);
-  if (e.kind === 'fake') return age < e.dur * 0.35 ? e.dir * v : -e.dir * v * 1.4;
-  return e.dir * v;
+// Cumulative move of an event at a given age, in cents, signed.
+function eventPath(e, age) {
+  if (age <= 0) return 0;
+  const u = Math.min(1, age / e.dur), f = SHAPES[e.shape], g = SHAPES[e.shape2];
+  if (e.kind === 'dud') return e.dir * e.size * Math.sin(u * Math.PI);
+  if (e.kind === 'fake') {
+    // half the move the headline's way over the first 35%, then a bigger move back the other way
+    return u < 0.35 ? e.dir * e.size * 0.5 * f(u / 0.35)
+                    : e.dir * e.size * (0.5 - 1.2 * g((u - 0.35) / 0.65));
+  }
+  return e.dir * e.size * f(u);
 }
 function stepPrice() {
   if (S.tick === S.nextEvent) scheduleHeadline();
@@ -244,8 +262,13 @@ function stepPrice() {
     if (S.tick >= p.at) { addEvent(p.dir, 'silent', p.size, p.dur, null); S.pending.splice(i, 1);
       if (S.nextEvent < S.tick + p.dur + 20) S.nextEvent = S.tick + p.dur + rndi(20, 50); }
   }
-  let d = gauss() * S.price * 0.0001;
-  for (const e of S.events) d += eventDrift(e, S.tick - e.at);
+  // background: a slow drift that changes every 1 to 3 seconds, plus noise
+  if (S.tick >= S.driftUntil) { S.drift = gauss() * S.price * 0.00012; S.driftUntil = S.tick + rndi(20, 60); }
+  let d = S.drift + gauss() * S.price * 0.00012;
+  for (const e of S.events) {
+    const now = eventPath(e, S.tick - e.at);
+    d += now - e.done; e.done = now;
+  }
   S.price = Math.max(S.start * 0.5, S.price + d);
 }
 function resolveEvents() {
@@ -282,12 +305,15 @@ function syncButtons() {
   document.getElementById('flatBtn').classList.toggle('on', S.pos === 0);
   document.getElementById('sellBtn').classList.toggle('on', S.pos === -1);
 }
-// Perfect hindsight on the same path: true side of every move, flat between, same spread.
+// Perfect hindsight, but with a human reaction time: it knows the true side
+// of every move and still takes 300ms to act on it. Without that, the
+// front-loaded spikes would make 5 stars impossible for anyone with hands.
+const ORACLE_DELAY = 6;
 function oraclePnl(upTo = S.hist.length) {
   let cash = 0, pos = 0;
   for (let t = 0; t < upTo; t++) {
     let want = 0;
-    for (const e of S.events) { const w = truth(e, t - e.at); if (w) want = w; }
+    for (const e of S.events) { const w = truth(e, t - e.at - ORACLE_DELAY); if (w) want = w; }
     if (want !== pos) { const d = want - pos; cash -= d * SIZE * S.hist[t] + Math.abs(d) * spread(S.hist[t]) * SIZE; pos = want; }
   }
   return cash + pos * SIZE * S.hist[upTo - 1];
@@ -321,14 +347,16 @@ function endRound() {
   try { localStorage.setItem(key, String(best)); } catch (e) { /* private mode */ }
   const el = document.getElementById('news');
   el.textContent = 'round over. green is where you were long, red where you were short.'; el.className = '';
-  document.getElementById('side').innerHTML = `
-    <div class="loading"><span class="label">rating your trades</span><div class="bar"><i></i></div></div>`;
+  const box = document.getElementById('modalBox');
+  box.innerHTML = `<h2>ROUND OVER</h2><div class="label">rating your trades</div><div class="bar"><i></i></div>`;
+  document.getElementById('modal').classList.add('show');
   const cls = (v) => (v > 0 ? 'pos' : v < 0 ? 'neg' : '');
   const scls = stars > 0 ? 'gold' : stars < 0 ? 'neg' : '';
   const reveal = () => {
     if (!S.over) return;
-    document.getElementById('side').innerHTML = `
-      <span class="label">${mode} · ${lenS === 60 ? '60 sec' : '2 min'} · ${S.ticker}</span>
+    box.innerHTML = `
+      <h2>ROUND OVER</h2>
+      <div class="label">${mode} · ${lenS === 60 ? '60 sec' : '2 min'} · ${S.ticker}</div>
       <div class="rating ${scls}">${stars < 0 ? '-' : ''}${starText(stars)}</div>
       <div class="title ${scls}">${TITLES[stars]}</div>
       <div class="roast">${pick(ROASTS[stars])}</div>
@@ -340,13 +368,18 @@ function endRound() {
         <tr><td>best streak</td><td class="gold">${S.bestStreak}</td></tr>
         <tr><td>best rating</td><td>${best < 0 ? '-' : ''}${starText(best)}</td></tr>
       </table>
-      <button class="go" id="againBtn">PLAY AGAIN</button>
-      <div class="hard">Hard mode: <a href="hard.html">quote the order book yourself</a>.</div>`;
-    document.getElementById('againBtn').onclick = showStart;
+      <div class="actions">
+        <button class="go ghost" id="chartBtn">SEE CHART</button>
+        <button class="go" id="againBtn">PLAY AGAIN</button>
+      </div>`;
+    document.getElementById('againBtn').onclick = () => { closeModal(); showStart(); };
+    document.getElementById('chartBtn').onclick = closeModal;
     if (stars >= 4) burst();
   };
   S.revealTimer = setTimeout(reveal, 1500);
 }
+function closeModal() { document.getElementById('modal').classList.remove('show'); }
+document.getElementById('modal').addEventListener('click', (e) => { if (e.target.id === 'modal') closeModal(); });
 
 // ---------------------------------------------------------------------------
 // Chart and effects
@@ -366,15 +399,13 @@ function gridStep(range) {
   return 10000;
 }
 function draw(now) {
-  const g = ctx.createLinearGradient(0, 0, 0, H);
-  g.addColorStop(0, '#10132a'); g.addColorStop(1, '#0a0c18');
-  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#0d1130'; ctx.fillRect(0, 0, W, H);
   const hist = S.hist, n = hist.length;
   const marg = S.start * 0.004;
   const tLo = Math.min(...hist) - marg, tHi = Math.max(...hist) + marg;
   lo += (tLo - lo) * 0.2; hi += (tHi - hi) * 0.2;
   const x = (i) => PAD + (i / TICKS) * (W - PAD - 8), y = (p) => 24 + (1 - (p - lo) / (hi - lo)) * (H - 34);
-  ctx.strokeStyle = 'rgba(255,255,255,.07)'; ctx.fillStyle = '#8b90a7'; ctx.font = '10px ui-monospace, Menlo, monospace';
+  ctx.strokeStyle = '#1f2656'; ctx.fillStyle = '#9aa0c2'; ctx.font = '10px ui-monospace, Menlo, monospace';
   ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
   const stepC = gridStep(hi - lo);
   for (let p = Math.ceil(lo / stepC) * stepC; p < hi; p += stepC) {
@@ -386,12 +417,12 @@ function draw(now) {
     const p = S.posHist[i]; let j = i;
     while (j < n - 1 && S.posHist[j + 1] === p) j++;
     if (p !== 0) {
-      ctx.fillStyle = p > 0 ? 'rgba(34,230,165,.18)' : 'rgba(255,77,109,.18)';
+      ctx.fillStyle = p > 0 ? 'rgba(31,224,160,.22)' : 'rgba(255,77,109,.22)';
       ctx.beginPath(); ctx.moveTo(x(i), H);
       for (let k = i; k <= j; k++) ctx.lineTo(x(k), y(hist[k]));
       ctx.lineTo(x(j), H); ctx.closePath(); ctx.fill();
     }
-    ctx.strokeStyle = p > 0 ? '#22e6a5' : p < 0 ? '#ff4d6d' : '#7dd3fc'; ctx.lineWidth = p ? 2.2 : 1.6;
+    ctx.strokeStyle = p > 0 ? '#1fe0a0' : p < 0 ? '#ff4d6d' : '#6fd0ff'; ctx.lineWidth = p ? 2.4 : 1.8;
     ctx.beginPath(); for (let k = i; k <= Math.min(j + 1, n - 1); k++) (k === i ? ctx.moveTo : ctx.lineTo).call(ctx, x(k), y(hist[k]));
     ctx.stroke();
     i = j + 1;
@@ -399,39 +430,37 @@ function draw(now) {
   for (const e of S.events) {
     const xx = x(e.at);
     if (e.kind === 'silent' && !S.over) continue;
-    ctx.fillStyle = e.kind === 'silent' ? '#8b90a7' : e.dir > 0 ? '#22e6a5' : '#ff4d6d';
+    ctx.fillStyle = e.kind === 'silent' ? '#9aa0c2' : e.dir > 0 ? '#1fe0a0' : '#ff4d6d';
     ctx.beginPath();
     if (e.dir > 0) { ctx.moveTo(xx, 4); ctx.lineTo(xx - 4, 12); ctx.lineTo(xx + 4, 12); }
     else { ctx.moveTo(xx, 12); ctx.lineTo(xx - 4, 4); ctx.lineTo(xx + 4, 4); }
     ctx.closePath(); ctx.fill();
     if (S.over && e.kind !== 'real') {
-      ctx.fillStyle = e.kind === 'fake' ? '#ffcc33' : '#8b90a7'; ctx.textAlign = 'center';
+      ctx.fillStyle = e.kind === 'fake' ? '#ffcc33' : '#9aa0c2'; ctx.textAlign = 'center';
       ctx.fillText({ fake: 'fake', dud: 'dud', silent: 'dump' }[e.kind], xx, 20);
     }
     if (S.over && e.kind !== 'dud' && e.resolved) {
-      ctx.fillStyle = e.right ? '#22e6a5' : '#ff4d6d'; ctx.textAlign = 'center';
+      ctx.fillStyle = e.right ? '#1fe0a0' : '#ff4d6d'; ctx.textAlign = 'center';
       ctx.fillText(e.right ? '✓' : '✗', x((e.at + e.end) / 2), H - 8);
     }
   }
   const last = hist[n - 1];
-  ctx.fillStyle = S.pos > 0 ? '#22e6a5' : S.pos < 0 ? '#ff4d6d' : '#7dd3fc';
-  ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 12;
-  ctx.beginPath(); ctx.arc(x(n - 1), y(last), 4, 0, Math.PI * 2); ctx.fill();
-  ctx.shadowBlur = 0;
+  ctx.fillStyle = S.pos > 0 ? '#1fe0a0' : S.pos < 0 ? '#ff4d6d' : '#6fd0ff';
+  ctx.beginPath(); ctx.arc(x(n - 1), y(last), 4.5, 0, Math.PI * 2); ctx.fill();
   S.popups = S.popups.filter((p) => now - p.at < 1400);
   ctx.font = 'bold 13px ui-monospace, Menlo, monospace'; ctx.textAlign = 'center';
   for (const p of S.popups) {
     const t = (now - p.at) / 1400;
-    ctx.fillStyle = p.good ? `rgba(34,230,165,${1 - t})` : `rgba(255,77,109,${1 - t})`;
+    ctx.fillStyle = p.good ? `rgba(31,224,160,${1 - t})` : `rgba(255,77,109,${1 - t})`;
     ctx.fillText(p.text, Math.min(x(p.tick), W - 30), y(p.price) - 14 - t * 30);
   }
   if (S.confetti.length) {
-    for (const c of S.confetti) { c.x += c.vx; c.y += c.vy; c.vy += 0.15; c.vx *= 0.99; ctx.fillStyle = c.color; ctx.fillRect(c.x, c.y, 5, 5); }
+    for (const c of S.confetti) { c.x += c.vx; c.y += c.vy; c.vy += 0.15; c.vx *= 0.99; ctx.fillStyle = c.color; ctx.fillRect(c.x, c.y, 6, 6); }
     S.confetti = S.confetti.filter((c) => c.y < H + 10);
   }
 }
 function burst() {
-  const colors = ['#22e6a5', '#ffcc33', '#7c5cff', '#ff4d6d', '#7dd3fc', '#ffffff'];
+  const colors = ['#1fe0a0', '#ffcc33', '#7c5cff', '#ff4d6d', '#6fd0ff', '#ffffff'];
   for (let k = 0; k < 160; k++) S.confetti.push({ x: W / 2 + rnd(-40, 40), y: H / 2, vx: rnd(-7, 7), vy: rnd(-10, -2), color: pick(colors) });
 }
 function flash(color) {
@@ -457,14 +486,12 @@ function drawStats() {
     $('stars').textContent = `${stars < 0 ? '-' : ''}${starText(stars)}`;
     $('stars').className = `big ${stars > 0 ? 'gold' : stars < 0 ? 'neg' : ''}`;
   }
-  if (!S.over) {
-    const scored = S.events.filter((e) => e.resolved && e.kind !== 'dud');
-    $('calls').textContent = `${scored.filter((e) => e.right).length} / ${scored.length}`;
-    $('streak').textContent = S.streak;
-    $('fees').textContent = fmt$(S.fees);
-    const bh = SIZE * (S.price - S.hist[0]);
-    $('bh').textContent = fmt$(bh); $('bh').className = `v ${bh >= 0 ? 'pos' : 'neg'}`;
-  }
+  const scored = S.events.filter((e) => e.resolved && e.kind !== 'dud');
+  $('calls').textContent = `${scored.filter((e) => e.right).length} / ${scored.length}`;
+  $('streak').textContent = S.streak;
+  $('fees').textContent = fmt$(S.fees);
+  const bh = SIZE * (S.price - S.hist[0]);
+  $('bh').textContent = fmt$(bh); $('bh').className = `v ${bh >= 0 ? 'pos' : 'neg'}`;
 }
 
 let last = 0, acc = 0;
@@ -485,7 +512,7 @@ window.addEventListener('keydown', (e) => {
     case 'ArrowUp': case 'b': case 'B': setPos(1); break;
     case ' ': case 'f': case 'F': setPos(0); break;
     case 'ArrowDown': case 's': case 'S': setPos(-1); break;
-    case 'r': case 'R': showStart(); break;
+    case 'r': case 'R': closeModal(); showStart(); break;
     default: return;
   }
   e.preventDefault();
@@ -501,13 +528,11 @@ function syncChips() {
 document.querySelectorAll('#lenChips .chip').forEach((c) => { c.onclick = () => { lenS = Number(c.dataset.len); syncChips(); }; });
 document.querySelectorAll('#modeChips .chip').forEach((c) => { c.onclick = () => { mode = c.dataset.mode; syncChips(); }; });
 
-const SIDE_HTML = $('side').innerHTML;
 function showStart() {
   if (S && S.revealTimer) clearTimeout(S.revealTimer);
   reset(); syncChips();
   lo = S.start * 0.99; hi = S.start * 1.01;
   $('overlay').style.display = 'flex';
-  $('side').innerHTML = SIDE_HTML;
   $('news').innerHTML = '&nbsp;'; $('news').className = '';
   syncButtons();
 }
@@ -517,7 +542,6 @@ function start() {
   reset();
   S.running = true; acc = 0; lo = S.start * 0.99; hi = S.start * 1.01;
   $('overlay').style.display = 'none';
-  $('side').innerHTML = SIDE_HTML;
   $('news').textContent = `${S.ticker} opens at ${(S.start / 100).toFixed(2)}. wait for the first headline.`; $('news').className = '';
   syncButtons();
 }
