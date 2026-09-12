@@ -40,15 +40,42 @@ Pick a length (60 seconds or 2 minutes) and a mode:
 - **Silent dump.** A real move finishes, and a few seconds later the price
   goes the other way with no headline at all. Good news that sells off
   anyway, like the normal market.
+- **A pattern.** About 40% of real headlines unfold as a multi-leg structure
+  instead of one move.
 
 The only reliable tell is the line. If it stalls, the move is over.
+
+## Patterns
+
+A pattern is a sequence of swings, sized so a higher low really is higher
+than the low before it:
+
+| Pattern | Swings | Payoff |
+|---|---|---|
+| Bull flag | HH HL HH | breakout up |
+| Bear flag | LL LH LL | breakdown |
+| Uptrend | HL HH HL HH | the last leg up |
+| Downtrend | LH LL LH LL | the last leg down |
+| Double top | HH LH LL | the drop off the second high |
+| Double bottom | LL HL HH | the rip off the second low |
+| Bull trap | HH LL | the reversal after the fake breakout |
+| Bear trap | LL HH | the reversal after the fake breakdown |
+
+Every pattern builds toward one payoff leg. Be on that side **before** it
+starts, which means holding through the pullback, and you read the pattern:
+a bonus of 2.2% of the price lands with a callout on the chart. React after
+it starts and you get the move but not the bonus. Patterns can still be
+followed by a dump, so reading one is not a reason to stay in.
+
+The chart labels every pattern by name at the end of the round, so you can
+see what you were looking at.
 
 ## The rating
 
 Your P&L is compared with perfect hindsight: a trader who, on the same
 price path, holds the true side of every move, is flat in between, pays the
-same spread, and still needs 300 ms to act, the same as you. Match it and
-you get 5 stars. Lose as much as it made and
+same spread, reads every pattern, and still needs 300 ms to act, the same as
+you. Match it and you get 5 stars. Lose as much as it made and
 you get -5. Each star is 20% of the way.
 
 | Stars | Title |

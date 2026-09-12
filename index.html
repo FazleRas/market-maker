@@ -6,31 +6,33 @@
 <title>Read the Tape</title>
 <meta name="description" content="A trading game. Headlines move the price. Buy, sell, or stay flat, and get rated from -5 to 5 stars on how well you read the market.">
 <style>
-  :root { --bg: #111633; --panel: #1a2048; --line: #2c3470; --text: #f2f3fa; --muted: #9aa0c2;
-    --purple: #7c5cff; --pos: #1fe0a0; --neg: #ff4d6d; --gold: #ffcc33; --cyan: #6fd0ff; --ink: #0b0e22; }
+  /* Terminal palette: amber on warm black, with the mint/red semantic pair
+     that trading screens have used since monochrome monitors. */
+  :root { --bg: #0c0c0a; --panel: #15140f; --line: #38362a; --text: #e8e2d4; --muted: #8c8674;
+    --amber: #fb8b1e; --pos: #4af6c3; --neg: #ff433d; --ink: #0c0c0a; }
   html, body { margin: 0; background: var(--bg); color: var(--text);
     font: 13px/1.5 "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace; }
-  * { box-sizing: border-box; }
+  * { box-sizing: border-box; border-radius: 0 !important; }
   #app { max-width: 920px; margin: 0 auto; padding: 16px 16px 40px; }
   header { display: flex; align-items: baseline; gap: 16px; margin-bottom: 12px; }
-  header h1 { font-size: 15px; letter-spacing: .3em; margin: 0; font-weight: 700; color: var(--gold); }
+  header h1 { font-size: 15px; letter-spacing: .3em; margin: 0; font-weight: 700; color: var(--amber); }
   header .src { margin-left: auto; color: var(--muted); font-size: 11px; text-decoration: none; }
-  .panel { border: 2px solid var(--line); background: var(--panel); border-radius: 8px; padding: 12px 14px; }
+  .panel { border: 1px solid var(--line); background: var(--panel); padding: 12px 14px; }
   .label { font-size: 10.5px; letter-spacing: .16em; color: var(--muted); text-transform: uppercase; }
-  #chart { display: block; width: 100%; height: 330px; border-radius: 6px; }
+  #chart { display: block; width: 100%; height: 330px; }
   .top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
   .big { font-size: 28px; line-height: 1.1; }
-  #news { font-size: 16px; letter-spacing: .04em; min-height: 30px; margin: 6px 0; padding: 2px 10px; border-radius: 4px; display: inline-block; }
+  #news { font-size: 16px; letter-spacing: .04em; min-height: 30px; margin: 6px 0; padding: 2px 10px; display: inline-block; }
   #news.pos { background: var(--pos); color: var(--ink); } #news.neg { background: var(--neg); color: var(--ink); }
   .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
   @media (max-width: 640px) { .row { grid-template-columns: 1fr; } }
   .btns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
-  .btns button { font: inherit; font-size: 16px; font-weight: 700; letter-spacing: .2em; padding: 24px 0; border: 2px solid var(--line);
-    border-radius: 6px; background: var(--bg); color: var(--muted); cursor: pointer; transition: transform 80ms; }
+  .btns button { font: inherit; font-size: 16px; font-weight: 700; letter-spacing: .2em; padding: 24px 0; border: 1px solid var(--line);
+    background: var(--bg); color: var(--muted); cursor: pointer; }
   .btns button:hover { color: var(--text); border-color: var(--text); }
-  .btns button:active { transform: scale(.96); }
+  .btns button:active { transform: translate(1px, 1px); }
   .btns button.on { color: var(--ink); border-color: transparent; }
-  #buyBtn.on { background: var(--pos); } #flatBtn.on { background: #ffffff; } #sellBtn.on { background: var(--neg); }
+  #buyBtn.on { background: var(--pos); } #flatBtn.on { background: var(--text); } #sellBtn.on { background: var(--neg); }
   .keys { color: var(--muted); font-size: 11px; margin-top: 10px; }
   .keys b { color: var(--text); font-weight: 500; }
   .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; margin-top: 6px; }
@@ -38,35 +40,34 @@
   .stat .v { font-size: 20px; }
   .hard { color: var(--muted); font-size: 11px; margin-top: 14px; }
   .hard a { color: var(--muted); }
-  .pos { color: var(--pos); } .neg { color: var(--neg); } .gold { color: var(--gold); }
+  .pos { color: var(--pos); } .neg { color: var(--neg); } .gold { color: var(--amber); }
   button.go { font: inherit; font-size: 14px; font-weight: 700; letter-spacing: .16em; padding: 14px 28px;
-    border-radius: 6px; background: var(--purple); color: #fff; border: 0; cursor: pointer; }
-  button.go:active { transform: scale(.98); }
-  button.ghost { background: transparent; color: var(--muted); border: 2px solid var(--line); }
+    background: var(--amber); color: var(--ink); border: 0; cursor: pointer; }
+  button.go:active { transform: translate(1px, 1px); }
+  button.ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
   #overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-    background: rgba(17,22,51,.92); text-align: center; padding: 20px; border-radius: 8px; }
+    background: rgba(12,12,10,.94); text-align: center; padding: 20px; }
   #overlay .rules { color: var(--text); font-size: 14px; line-height: 1.7; margin: 10px auto; max-width: 440px; }
   #overlay .rules b { font-weight: 700; letter-spacing: .1em; }
   #overlay .pick { margin: 14px 0 4px; }
   .chips { display: inline-flex; gap: 6px; margin: 4px 0 10px; flex-wrap: wrap; justify-content: center; }
-  .chip { font: inherit; font-size: 11px; letter-spacing: .16em; padding: 7px 14px; border: 2px solid var(--line); border-radius: 999px;
+  .chip { font: inherit; font-size: 11px; letter-spacing: .16em; padding: 7px 14px; border: 1px solid var(--line);
     background: transparent; color: var(--muted); cursor: pointer; }
   .chip.on { border-color: var(--text); color: var(--text); }
   .chip.calm.on { border-color: var(--pos); color: var(--pos); }
   .chip.chaos.on { border-color: var(--neg); color: var(--neg); }
-  /* end-of-round popup, old browser game style */
-  #modal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(11,14,34,.7); z-index: 10; padding: 16px; }
+  #modal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(12,12,10,.72); z-index: 10; padding: 16px; }
   #modal.show { display: flex; }
-  .box { width: 100%; max-width: 420px; background: var(--panel); border: 3px solid var(--gold); border-radius: 8px;
-    box-shadow: 8px 8px 0 var(--ink); padding: 22px 24px 20px; text-align: center; animation: drop 250ms ease-out; }
-  @keyframes drop { from { transform: translateY(-30px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .box { width: 100%; max-width: 420px; background: var(--panel); border: 2px solid var(--amber);
+    box-shadow: 10px 10px 0 var(--ink); padding: 22px 24px 20px; text-align: center; animation: drop 220ms steps(4); }
+  @keyframes drop { from { transform: translateY(-24px); opacity: 0; } to { transform: none; opacity: 1; } }
   .box h2 { margin: 0 0 6px; font-size: 13px; letter-spacing: .3em; font-weight: 700; color: var(--muted); }
-  .box .bar { height: 10px; border: 2px solid var(--line); border-radius: 5px; margin: 22px 0 8px; overflow: hidden; }
-  .box .bar i { display: block; height: 100%; width: 0; background: var(--cyan); animation: fill 1400ms ease-in-out forwards; }
+  .box .bar { height: 10px; border: 1px solid var(--line); margin: 22px 0 8px; overflow: hidden; }
+  .box .bar i { display: block; height: 100%; width: 0; background: var(--amber); animation: fill 1400ms steps(20) forwards; }
   @keyframes fill { to { width: 100%; } }
-  .rating { font-size: 44px; line-height: 1.1; margin-top: 6px; letter-spacing: .04em; animation: pop 450ms cubic-bezier(.2,1.6,.4,1); }
-  .title { font-size: 20px; font-weight: 700; letter-spacing: .12em; margin: 2px 0; animation: pop 450ms 100ms both cubic-bezier(.2,1.6,.4,1); }
-  .roast { font-size: 15px; margin: 8px 0 4px; animation: pop 450ms 200ms both cubic-bezier(.2,1.6,.4,1); }
+  .rating { font-size: 44px; line-height: 1.1; margin-top: 6px; letter-spacing: .04em; animation: pop 400ms steps(5); }
+  .title { font-size: 20px; font-weight: 700; letter-spacing: .12em; margin: 2px 0; animation: pop 400ms 100ms both steps(5); }
+  .roast { font-size: 15px; margin: 8px 0 4px; animation: pop 400ms 200ms both steps(5); }
   @keyframes pop { from { transform: scale(.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
   .box table { border-collapse: collapse; width: 100%; margin: 12px 0 4px; }
   .box td { padding: 4px 0; border-bottom: 1px solid var(--line); }
@@ -75,8 +76,8 @@
   .box .actions { display: flex; gap: 8px; margin-top: 14px; }
   .box .actions button { flex: 1; }
   #flash { position: fixed; inset: 0; pointer-events: none; opacity: 0; }
-  #flash.go { animation: flashfade 500ms ease-out; }
-  @keyframes flashfade { from { opacity: .35; } to { opacity: 0; } }
+  #flash.go { animation: flashfade 500ms steps(6); }
+  @keyframes flashfade { from { opacity: .3; } to { opacity: 0; } }
 </style>
 </head>
 <body>
@@ -100,7 +101,7 @@
     <canvas id="chart"></canvas>
     <div id="overlay">
       <div>
-        <div style="letter-spacing:.3em;font-size:14px;color:var(--gold);font-weight:700">READ THE TAPE</div>
+        <div style="letter-spacing:.3em;font-size:14px;color:var(--amber);font-weight:700">READ THE TAPE</div>
         <p class="rules"><span class="pos">▲ headline</span> usually means up. <span class="neg">▼ headline</span> usually means down. Sometimes it lies.</p>
         <p class="rules"><b>BUY</b> when it goes up. <b>SELL</b> when it goes down. <b>FLAT</b> when unsure.</p>
         <div class="pick"><span class="label">length</span></div>
@@ -135,7 +136,7 @@
       <div class="stats">
         <div class="stat"><span class="label">calls right</span><span class="v" id="calls">0 / 0</span></div>
         <div class="stat"><span class="label">streak</span><span class="v gold" id="streak">0</span></div>
-        <div class="stat"><span class="label">buy &amp; hold</span><span class="v" id="bh">$0.00</span></div>
+        <div class="stat"><span class="label">patterns read</span><span class="v gold" id="pats">0 / 0</span></div>
         <div class="stat"><span class="label">spread paid</span><span class="v neg" id="fees">$0.00</span></div>
       </div>
       <div class="hard">Hard mode: <a href="hard.html">quote the order book yourself</a>.</div>
@@ -163,9 +164,9 @@ const HEADLINES = {
          'SUPPLIER WARNS', 'PRICE WAR', 'TARIFFS HIT', 'DROPPED FROM INDEX', 'FACTORY STRIKE'],
 };
 const MODES = {
-  calm:   { fake: .18, dud: .08, dump: .10, gap: [50, 100], dur: [40, 120], hint: 'Fewer tricks. Headlines mostly mean what they say.' },
-  normal: { fake: .35, dud: .10, dump: .30, gap: [40, 80],  dur: [30, 120], hint: 'A third of headlines reverse. Good news can still dump.' },
-  chaos:  { fake: .50, dud: .12, dump: .45, gap: [25, 55],  dur: [25, 100], hint: 'Half of headlines reverse. Trust the line, not the words.' },
+  calm:   { fake: .18, dud: .08, dump: .10, struct: .45, gap: [50, 100], dur: [40, 120], hint: 'Fewer tricks. Headlines mostly mean what they say.' },
+  normal: { fake: .32, dud: .10, dump: .30, struct: .40, gap: [40, 80],  dur: [30, 120], hint: 'A third of headlines reverse. Good news can still dump.' },
+  chaos:  { fake: .46, dud: .12, dump: .45, struct: .35, gap: [25, 55],  dur: [25, 100], hint: 'Half of headlines reverse. Trust the line, not the words.' },
 };
 const TITLES = {
   5: 'TAPE READER', 4: 'SHARP', 3: 'SOLID', 2: 'GETTING THERE', 1: 'SCRATCHED A PROFIT', 0: 'FLAT',
@@ -185,19 +186,31 @@ const ROASTS = {
   '-5': ['Liquidated.', 'Margin call.', 'Delete the app.', 'Inverse this person.'],
 };
 
-// Move shapes: cumulative fraction of the move at progress u in [0, 1].
-// A headline picks one at random, so the same-sized move can be a spike
-// that fades, a slow build that accelerates, an S-curve, an overshoot that
-// gives some back, or a staircase.
+// Move shapes: cumulative fraction of a leg at progress u in [0, 1].
 const SHAPES = {
-  sharp:     (u) => 1 - Math.pow(1 - u, 3),                       // fast then flattens, log-like
-  accel:     (u) => u * u,                                        // slow start, x squared
+  sharp:     (u) => 1 - Math.pow(1 - u, 3),
+  accel:     (u) => u * u,
   steady:    (u) => u,
   scurve:    (u) => u * u * (3 - 2 * u),
-  overshoot: (u) => 1.25 * (1 - Math.pow(1 - u, 3)) - 0.25 * u * u * u,   // peaks ~12% past the target, retraces
+  overshoot: (u) => 1.25 * (1 - Math.pow(1 - u, 3)) - 0.25 * u * u * u,
   stairs:    (u) => { const k = Math.floor(u * 4), f = u * 4 - k; return Math.min(1, k / 4 + Math.min(1, f * 3) / 4); },
 };
 const shapeNames = Object.keys(SHAPES);
+
+// Multi-leg price structures. Each leg is [direction, size share, time share].
+// `pay` is the index of the leg the structure was building toward: be on that
+// side before it starts and you read the pattern. Sizes are relative, so a
+// higher low really is higher than the low before it.
+const STRUCTURES = [
+  { id: 'flag',    tag: 'BULL FLAG',    swing: 'HH HL HH', legs: [[1, 1.0, .34], [-1, .38, .28], [1, .95, .38]], pay: 2 },
+  { id: 'flag',    tag: 'BEAR FLAG',    swing: 'LL LH LL', legs: [[-1, 1.0, .34], [1, .38, .28], [-1, .95, .38]], pay: 2 },
+  { id: 'trend',   tag: 'UPTREND',      swing: 'HL HH HL HH', legs: [[1, .7, .22], [-1, .28, .16], [1, .8, .26], [-1, .25, .14], [1, .7, .22]], pay: 4 },
+  { id: 'trend',   tag: 'DOWNTREND',    swing: 'LH LL LH LL', legs: [[-1, .7, .22], [1, .28, .16], [-1, .8, .26], [1, .25, .14], [-1, .7, .22]], pay: 4 },
+  { id: 'reverse', tag: 'DOUBLE TOP',   swing: 'HH LH LL', legs: [[1, 1.0, .24], [-1, .45, .18], [1, .42, .20], [-1, 1.4, .38]], pay: 3 },
+  { id: 'reverse', tag: 'DOUBLE BOTTOM', swing: 'LL HL HH', legs: [[-1, 1.0, .24], [1, .45, .18], [-1, .42, .20], [1, 1.4, .38]], pay: 3 },
+  { id: 'trap',    tag: 'BULL TRAP',    swing: 'HH LL', legs: [[1, 1.0, .38], [1, .22, .14], [-1, 1.7, .48]], pay: 2 },
+  { id: 'trap',    tag: 'BEAR TRAP',    swing: 'LL HH', legs: [[-1, 1.0, .38], [-1, .22, .14], [1, 1.7, .48]], pay: 2 },
+];
 
 let mode = 'normal', lenS = 60, TICKS = 1200;
 let S;
@@ -206,22 +219,28 @@ function reset() {
   const start = rndi(80, 400) * 100 + rndi(0, 99);
   S = { tick: 0, running: false, over: false, ticker: pick(TICKERS), start, price: start, hist: [start], pos: 0, cash: 0, fees: 0, trades: 0,
         posHist: [0], events: [], nextEvent: rndi(40, 80), pending: [], entry: null, popups: [], confetti: [],
-        streak: 0, bestStreak: 0, drift: 0, driftUntil: 0 };
+        streak: 0, bestStreak: 0, drift: 0, driftUntil: 0, bonus: 0, oracleBonus: 0, patsRead: 0, patsTotal: 0 };
 }
 const spread = (price) => Math.max(1, Math.round(price * 0.0002));
 
 // ---------------------------------------------------------------------------
 // Events
 // ---------------------------------------------------------------------------
-function addEvent(dir, kind, size, dur, text) {
+function addEvent(dir, kind, size, dur, text, struct) {
   const e = { at: S.tick, end: S.tick + dur, dir, kind, size, dur, text, resolved: false,
-              shape: pick(shapeNames), shape2: pick(shapeNames), done: 0 };
+              shape: pick(shapeNames), shape2: pick(shapeNames), done: 0, leg: -1 };
+  if (struct) {
+    e.struct = struct;
+    e.legs = struct.legs.map((L) => [L[0], L[1], L[2], pick(shapeNames)]);
+    // normalize so the whole structure travels about `size` net
+    e.tag = struct.tag;
+  }
   S.events.push(e);
   if (text) {
     const el = document.getElementById('news');
     el.textContent = `${dir > 0 ? '▲' : '▼'} ${S.ticker}: ${text}`;
     el.className = dir > 0 ? 'pos' : 'neg';
-    flash(dir > 0 ? '#1fe0a0' : '#ff4d6d');
+    flash(dir > 0 ? '#4af6c3' : '#ff433d');
   }
   return e;
 }
@@ -230,26 +249,55 @@ function scheduleHeadline() {
   const dir = Math.random() < 0.5 ? 1 : -1;
   const r = Math.random();
   const kind = r < M.fake ? 'fake' : r < M.fake + M.dud ? 'dud' : 'real';
-  const dur = rndi(M.dur[0], M.dur[1]);
+  let dur = rndi(M.dur[0], M.dur[1]);
   const size = Math.round(S.price * (kind === 'dud' ? rnd(0.001, 0.003) : rnd(0.015, 0.045)));
-  const e = addEvent(dir, kind, size, dur, pick(HEADLINES[dir > 0 ? 'up' : 'down']));
-  if (kind === 'real' && Math.random() < M.dump) {
+  let struct = null;
+  if (kind === 'real' && Math.random() < M.struct) {
+    // a structure starts in the headline's direction, so the arrow is a real clue
+    struct = pick(STRUCTURES.filter((s) => s.legs[0][0] === dir));
+    dur = Math.round(dur * 1.8);
+    S.patsTotal++;
+  }
+  const e = addEvent(dir, kind, size, dur, pick(HEADLINES[dir > 0 ? 'up' : 'down']), struct);
+  if (kind === 'real' && !struct && Math.random() < M.dump) {
     S.pending.push({ at: e.end + rndi(30, 80), dir: -dir, size: Math.round(size * rnd(0.7, 1.3)), dur: rndi(30, 90) });
+  }
+  // a structure can still reverse right after it pays off
+  if (struct && Math.random() < M.dump) {
+    const payDir = struct.legs[struct.pay][0];
+    S.pending.push({ at: e.end + rndi(20, 60), dir: -payDir, size: Math.round(size * rnd(0.8, 1.4)), dur: rndi(30, 80) });
   }
   S.nextEvent = e.end + rndi(M.gap[0], M.gap[1]);
 }
+function legAt(e, age) {
+  let t = 0;
+  for (let i = 0; i < e.legs.length; i++) {
+    const d = e.legs[i][2] * e.dur;
+    if (age < t + d) return i;
+    t += d;
+  }
+  return e.legs.length - 1;
+}
 function truth(e, age) {
   if (age < 0 || age >= e.dur || e.kind === 'dud') return 0;
+  if (e.legs) return e.legs[legAt(e, age)][0];
   if (e.kind === 'fake') return age < e.dur * 0.35 ? e.dir : -e.dir;
   return e.dir;
 }
-// Cumulative move of an event at a given age, in cents, signed.
 function eventPath(e, age) {
   if (age <= 0) return 0;
+  if (e.legs) {
+    let acc = 0, t = 0;
+    for (const L of e.legs) {
+      const d = L[2] * e.dur;
+      if (age >= t + d) { acc += L[0] * L[1] * e.size; t += d; continue; }
+      return acc + L[0] * L[1] * e.size * SHAPES[L[3]]((age - t) / d);
+    }
+    return acc;
+  }
   const u = Math.min(1, age / e.dur), f = SHAPES[e.shape], g = SHAPES[e.shape2];
   if (e.kind === 'dud') return e.dir * e.size * Math.sin(u * Math.PI);
   if (e.kind === 'fake') {
-    // half the move the headline's way over the first 35%, then a bigger move back the other way
     return u < 0.35 ? e.dir * e.size * 0.5 * f(u / 0.35)
                     : e.dir * e.size * (0.5 - 1.2 * g((u - 0.35) / 0.65));
   }
@@ -262,12 +310,29 @@ function stepPrice() {
     if (S.tick >= p.at) { addEvent(p.dir, 'silent', p.size, p.dur, null); S.pending.splice(i, 1);
       if (S.nextEvent < S.tick + p.dur + 20) S.nextEvent = S.tick + p.dur + rndi(20, 50); }
   }
-  // background: a slow drift that changes every 1 to 3 seconds, plus noise
   if (S.tick >= S.driftUntil) { S.drift = gauss() * S.price * 0.00012; S.driftUntil = S.tick + rndi(20, 60); }
   let d = S.drift + gauss() * S.price * 0.00012;
   for (const e of S.events) {
-    const now = eventPath(e, S.tick - e.at);
+    const age = S.tick - e.at;
+    const now = eventPath(e, age);
     d += now - e.done; e.done = now;
+    // pattern payoff: were you already on the right side when the move began?
+    if (e.legs && age >= 0 && age < e.dur) {
+      const li = legAt(e, age);
+      if (li !== e.leg) {
+        e.leg = li;
+        if (li === e.struct.pay) {
+          const want = e.legs[li][0];
+          const prize = Math.round(S.price * 0.022) * SIZE;
+          S.oracleBonus += prize;              // perfect play always reads it
+          if (S.pos === want) {
+            S.cash += prize; S.bonus += prize; S.patsRead++;
+            S.popups.push({ text: `${e.tag} +${fmt$(prize)}`, kind: 'bonus', at: performance.now(), price: S.price, tick: S.tick });
+            flash('#fb8b1e');
+          }
+        }
+      }
+    }
   }
   S.price = Math.max(S.start * 0.5, S.price + d);
 }
@@ -291,7 +356,7 @@ function setPos(p) {
   const fee = spread(S.price) * SIZE;
   if (S.pos !== 0) {
     const realized = S.pos * SIZE * (S.price - S.entry) - fee;
-    S.popups.push({ text: `${realized >= 0 ? '+' : ''}${fmt$(realized)}`, good: realized >= 0, at: performance.now(), price: S.price, tick: S.tick });
+    S.popups.push({ text: `${realized >= 0 ? '+' : ''}${fmt$(realized)}`, kind: realized >= 0 ? 'good' : 'bad', at: performance.now(), price: S.price, tick: S.tick });
   }
   const delta = p - S.pos;
   S.cash -= delta * SIZE * S.price + Math.abs(delta) * fee;
@@ -305,9 +370,8 @@ function syncButtons() {
   document.getElementById('flatBtn').classList.toggle('on', S.pos === 0);
   document.getElementById('sellBtn').classList.toggle('on', S.pos === -1);
 }
-// Perfect hindsight, but with a human reaction time: it knows the true side
-// of every move and still takes 300ms to act on it. Without that, the
-// front-loaded spikes would make 5 stars impossible for anyone with hands.
+// Perfect hindsight with a human reaction time: knows the true side of every
+// move and still takes 300ms to act, and reads every pattern.
 const ORACLE_DELAY = 6;
 function oraclePnl(upTo = S.hist.length) {
   let cash = 0, pos = 0;
@@ -316,7 +380,7 @@ function oraclePnl(upTo = S.hist.length) {
     for (const e of S.events) { const w = truth(e, t - e.at - ORACLE_DELAY); if (w) want = w; }
     if (want !== pos) { const d = want - pos; cash -= d * SIZE * S.hist[t] + Math.abs(d) * spread(S.hist[t]) * SIZE; pos = want; }
   }
-  return cash + pos * SIZE * S.hist[upTo - 1];
+  return cash + pos * SIZE * S.hist[upTo - 1] + S.oracleBonus;
 }
 function starsFor(me, oracle) {
   if (oracle <= 0) return 0;
@@ -365,6 +429,7 @@ function endRound() {
         <tr><td>perfect</td><td class="pos">${fmt$(oracle)}</td></tr>
         <tr><td>buy and hold</td><td class="${cls(bh)}">${fmt$(bh)}</td></tr>
         <tr><td>calls right</td><td>${right} / ${scored.length}</td></tr>
+        <tr><td>patterns read</td><td class="gold">${S.patsRead} / ${S.patsTotal}${S.bonus ? ` · +${fmt$(S.bonus)}` : ''}</td></tr>
         <tr><td>best streak</td><td class="gold">${S.bestStreak}</td></tr>
         <tr><td>best rating</td><td>${best < 0 ? '-' : ''}${starText(best)}</td></tr>
       </table>
@@ -382,7 +447,7 @@ function closeModal() { document.getElementById('modal').classList.remove('show'
 document.getElementById('modal').addEventListener('click', (e) => { if (e.target.id === 'modal') closeModal(); });
 
 // ---------------------------------------------------------------------------
-// Chart and effects
+// Chart
 // ---------------------------------------------------------------------------
 const canvas = document.getElementById('chart'), ctx = canvas.getContext('2d');
 let W = 0, H = 0, dpr = 1;
@@ -399,13 +464,13 @@ function gridStep(range) {
   return 10000;
 }
 function draw(now) {
-  ctx.fillStyle = '#0d1130'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#0c0c0a'; ctx.fillRect(0, 0, W, H);
   const hist = S.hist, n = hist.length;
   const marg = S.start * 0.004;
   const tLo = Math.min(...hist) - marg, tHi = Math.max(...hist) + marg;
   lo += (tLo - lo) * 0.2; hi += (tHi - hi) * 0.2;
   const x = (i) => PAD + (i / TICKS) * (W - PAD - 8), y = (p) => 24 + (1 - (p - lo) / (hi - lo)) * (H - 34);
-  ctx.strokeStyle = '#1f2656'; ctx.fillStyle = '#9aa0c2'; ctx.font = '10px ui-monospace, Menlo, monospace';
+  ctx.strokeStyle = '#2a281f'; ctx.fillStyle = '#8c8674'; ctx.font = '10px ui-monospace, Menlo, monospace';
   ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
   const stepC = gridStep(hi - lo);
   for (let p = Math.ceil(lo / stepC) * stepC; p < hi; p += stepC) {
@@ -417,42 +482,51 @@ function draw(now) {
     const p = S.posHist[i]; let j = i;
     while (j < n - 1 && S.posHist[j + 1] === p) j++;
     if (p !== 0) {
-      ctx.fillStyle = p > 0 ? 'rgba(31,224,160,.22)' : 'rgba(255,77,109,.22)';
+      ctx.fillStyle = p > 0 ? 'rgba(74,246,195,.16)' : 'rgba(255,67,61,.16)';
       ctx.beginPath(); ctx.moveTo(x(i), H);
       for (let k = i; k <= j; k++) ctx.lineTo(x(k), y(hist[k]));
       ctx.lineTo(x(j), H); ctx.closePath(); ctx.fill();
     }
-    ctx.strokeStyle = p > 0 ? '#1fe0a0' : p < 0 ? '#ff4d6d' : '#6fd0ff'; ctx.lineWidth = p ? 2.4 : 1.8;
+    ctx.strokeStyle = p > 0 ? '#4af6c3' : p < 0 ? '#ff433d' : '#fb8b1e'; ctx.lineWidth = p ? 2.4 : 1.8;
     ctx.beginPath(); for (let k = i; k <= Math.min(j + 1, n - 1); k++) (k === i ? ctx.moveTo : ctx.lineTo).call(ctx, x(k), y(hist[k]));
     ctx.stroke();
     i = j + 1;
   }
+  const placed = [];   // label slots, so neighbouring events don't overprint
   for (const e of S.events) {
     const xx = x(e.at);
     if (e.kind === 'silent' && !S.over) continue;
-    ctx.fillStyle = e.kind === 'silent' ? '#9aa0c2' : e.dir > 0 ? '#1fe0a0' : '#ff4d6d';
+    ctx.fillStyle = e.kind === 'silent' ? '#8c8674' : e.dir > 0 ? '#4af6c3' : '#ff433d';
     ctx.beginPath();
     if (e.dir > 0) { ctx.moveTo(xx, 4); ctx.lineTo(xx - 4, 12); ctx.lineTo(xx + 4, 12); }
     else { ctx.moveTo(xx, 12); ctx.lineTo(xx - 4, 4); ctx.lineTo(xx + 4, 4); }
     ctx.closePath(); ctx.fill();
-    if (S.over && e.kind !== 'real') {
-      ctx.fillStyle = e.kind === 'fake' ? '#ffcc33' : '#9aa0c2'; ctx.textAlign = 'center';
-      ctx.fillText({ fake: 'fake', dud: 'dud', silent: 'dump' }[e.kind], xx, 20);
+    ctx.textAlign = 'center';
+    const text = e.tag ? e.tag.toLowerCase() : e.kind !== 'real' ? { fake: 'fake', dud: 'dud', silent: 'dump' }[e.kind] : null;
+    if (S.over && text) {
+      const lx = e.tag ? x(e.at + e.dur / 2) : xx, half = ctx.measureText(text).width / 2 + 4;
+      let row = 0;
+      while (placed.some((p) => p.row === row && Math.abs(p.x - lx) < p.half + half)) row++;
+      placed.push({ x: lx, half, row });
+      ctx.fillStyle = e.tag ? '#fb8b1e' : e.kind === 'fake' ? '#fb8b1e' : '#8c8674';
+      ctx.fillText(text, lx, 20 + row * 11);
     }
     if (S.over && e.kind !== 'dud' && e.resolved) {
-      ctx.fillStyle = e.right ? '#1fe0a0' : '#ff4d6d'; ctx.textAlign = 'center';
+      ctx.fillStyle = e.right ? '#4af6c3' : '#ff433d';
       ctx.fillText(e.right ? '✓' : '✗', x((e.at + e.end) / 2), H - 8);
     }
   }
   const last = hist[n - 1];
-  ctx.fillStyle = S.pos > 0 ? '#1fe0a0' : S.pos < 0 ? '#ff4d6d' : '#6fd0ff';
-  ctx.beginPath(); ctx.arc(x(n - 1), y(last), 4.5, 0, Math.PI * 2); ctx.fill();
-  S.popups = S.popups.filter((p) => now - p.at < 1400);
-  ctx.font = 'bold 13px ui-monospace, Menlo, monospace'; ctx.textAlign = 'center';
+  ctx.fillStyle = S.pos > 0 ? '#4af6c3' : S.pos < 0 ? '#ff433d' : '#fb8b1e';
+  ctx.fillRect(x(n - 1) - 3, y(last) - 3, 7, 7);
+  S.popups = S.popups.filter((p) => now - p.at < 1500);
+  ctx.textAlign = 'center';
   for (const p of S.popups) {
-    const t = (now - p.at) / 1400;
-    ctx.fillStyle = p.good ? `rgba(31,224,160,${1 - t})` : `rgba(255,77,109,${1 - t})`;
-    ctx.fillText(p.text, Math.min(x(p.tick), W - 30), y(p.price) - 14 - t * 30);
+    const t = (now - p.at) / 1500;
+    ctx.font = p.kind === 'bonus' ? 'bold 14px ui-monospace, Menlo, monospace' : 'bold 13px ui-monospace, Menlo, monospace';
+    ctx.fillStyle = p.kind === 'bonus' ? `rgba(251,139,30,${1 - t})`
+                  : p.kind === 'good' ? `rgba(74,246,195,${1 - t})` : `rgba(255,67,61,${1 - t})`;
+    ctx.fillText(p.text, Math.min(Math.max(x(p.tick), 44), W - 40), y(p.price) - 14 - t * 32);
   }
   if (S.confetti.length) {
     for (const c of S.confetti) { c.x += c.vx; c.y += c.vy; c.vy += 0.15; c.vx *= 0.99; ctx.fillStyle = c.color; ctx.fillRect(c.x, c.y, 6, 6); }
@@ -460,7 +534,7 @@ function draw(now) {
   }
 }
 function burst() {
-  const colors = ['#1fe0a0', '#ffcc33', '#7c5cff', '#ff4d6d', '#6fd0ff', '#ffffff'];
+  const colors = ['#4af6c3', '#fb8b1e', '#ff433d', '#e8e2d4'];
   for (let k = 0; k < 160; k++) S.confetti.push({ x: W / 2 + rnd(-40, 40), y: H / 2, vx: rnd(-7, 7), vy: rnd(-10, -2), color: pick(colors) });
 }
 function flash(color) {
@@ -489,9 +563,8 @@ function drawStats() {
   const scored = S.events.filter((e) => e.resolved && e.kind !== 'dud');
   $('calls').textContent = `${scored.filter((e) => e.right).length} / ${scored.length}`;
   $('streak').textContent = S.streak;
+  $('pats').textContent = `${S.patsRead} / ${S.patsTotal}`;
   $('fees').textContent = fmt$(S.fees);
-  const bh = SIZE * (S.price - S.hist[0]);
-  $('bh').textContent = fmt$(bh); $('bh').className = `v ${bh >= 0 ? 'pos' : 'neg'}`;
 }
 
 let last = 0, acc = 0;
